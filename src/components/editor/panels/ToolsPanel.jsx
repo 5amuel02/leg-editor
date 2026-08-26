@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Eraser, Highlighter, MousePointer2, Pen, PenLine, Table } from 'lucide-react'
 import { useEditor } from '../../../context/EditorContext'
-import { BRUSHES, SWATCHES } from '../../../lib/constants'
+import { BRUSHES, BRUSH_SWATCHES } from '../../../lib/constants'
 import { createTable } from '../../../lib/fabricUtils'
 import Button from '../../ui/Button'
 import ColorPicker from '../../ui/ColorPicker'
@@ -156,7 +156,7 @@ export default function ToolsPanel() {
         <div className="flex items-center gap-2">
           <ColorPicker value={baseColor} onChange={changeColor} label="Warna brush" />
           <div className="flex flex-wrap gap-1.5">
-            {SWATCHES.filter((_, i) => i % 2 === 0).map((c) => (
+            {BRUSH_SWATCHES.map((c) => (
               <button
                 key={c}
                 type="button"
@@ -176,9 +176,12 @@ export default function ToolsPanel() {
           <SliderInput min={1} max={80} step={1} value={brush.width} onChange={changeWidth} suffix="px" />
         </div>
 
-        {/* Pratinjau goresan */}
-        <div className="flex h-14 items-center justify-center rounded-xl border border-ink-200 bg-white">
+        {/* Pratinjau goresan — separuh terang, separuh gelap supaya warna
+            terang seperti putih tetap terlihat jelas. */}
+        <div className="flex h-14 items-center justify-center overflow-hidden rounded-xl border border-ink-200">
           <svg viewBox="0 0 200 40" className="h-full w-full">
+            <rect x="0" y="0" width="100" height="40" fill="#ffffff" />
+            <rect x="100" y="0" width="100" height="40" fill="#334155" />
             <path
               d="M10 30 C 50 4, 80 36, 110 20 S 170 8, 190 22"
               fill="none"

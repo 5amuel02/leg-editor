@@ -63,18 +63,24 @@ export function SliderInput({ value, onChange, min = 0, max = 100, step = 1, sho
   )
 }
 
-export function Select({ value, onChange, options, className = '' }) {
+/**
+ * Dropdown sederhana.
+ * `fontPreview` membuat setiap opsi (dan kotak terpilih) dirender memakai
+ * typeface-nya sendiri — dipakai untuk pemilih font agar mudah dikenali.
+ */
+export function Select({ value, onChange, options, className = '', fontPreview = false }) {
   return (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      style={fontPreview ? { fontFamily: value } : undefined}
       className={`h-8 rounded-lg border border-ink-200 bg-white px-2 text-xs outline-none focus:border-brand-400 ${className}`}
     >
       {options.map((opt) => {
         const val = typeof opt === 'string' ? opt : opt.value
         const label = typeof opt === 'string' ? opt : opt.label
         return (
-          <option key={val} value={val}>
+          <option key={val} value={val} style={fontPreview ? { fontFamily: val } : undefined}>
             {label}
           </option>
         )
