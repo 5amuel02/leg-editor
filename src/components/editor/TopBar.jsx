@@ -74,6 +74,15 @@ export default function TopBar({ onBack, onExportPNG, onExportAllPNG, onExportPD
         <ChevronLeft size={20} />
       </IconButton>
 
+      {/* Tanda Legza kecil sebagai penanda merek di layar editor.
+          Disembunyikan di layar sempit karena bilah ini padat. */}
+      <img
+        src="/logo-mark.png"
+        alt=""
+        aria-hidden
+        className="hidden h-6 w-auto shrink-0 select-none sm:block"
+      />
+
       {/* Nama project (bisa diedit langsung) */}
       <input
         value={name}

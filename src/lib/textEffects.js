@@ -291,7 +291,7 @@ const RESET_PROPS = {
   textBackgroundColor: '',
 }
 
-export const DEFAULT_EFFECT_COLOR = '#8b5cf6'
+export const DEFAULT_EFFECT_COLOR = '#e11620'
 export const DEFAULT_EFFECT_STRENGTH = 50
 
 /**

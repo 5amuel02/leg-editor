@@ -6,7 +6,7 @@
  */
 import * as fabric from 'fabric'
 
-export const DEFAULT_GRADIENT = { from: '#8b5cf6', to: '#ec4899', angle: 90 }
+export const DEFAULT_GRADIENT = { from: '#e11620', to: '#f59e0b', angle: 90 }
 
 /**
  * Ujung garis gradien untuk sebuah sudut, dalam satuan PERSENTASE (0–1)

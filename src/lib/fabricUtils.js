@@ -178,7 +178,7 @@ function polygonPoints(sides, radius = 100) {
  */
 export function createShape(shapeId, size = 240, style = {}) {
   const base = {
-    fill: style.fill ?? '#8b5cf6',
+    fill: style.fill ?? '#e11620',
     stroke: style.stroke ?? null,
     strokeWidth: style.strokeWidth ?? 0,
     strokeUniform: true,

@@ -45,7 +45,7 @@ describe('readGradient', () => {
   })
 
   it('membaca ulang gradien hasil gradientPatch', () => {
-    const nilai = { from: '#8b5cf6', to: '#ec4899', angle: 90 }
+    const nilai = { from: '#e11620', to: '#f59e0b', angle: 90 }
     const { fill } = gradientPatch(nilai)
     expect(readGradient({ fill })).toEqual({ ...nilai, enabled: true })
   })

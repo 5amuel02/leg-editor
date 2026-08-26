@@ -9,8 +9,12 @@
  * otomatis hilang begitu interaksi selesai.
  */
 
-/** Latar badge memakai ungu merek supaya tidak bersaing dengan garis bantu pink. */
-const BADGE_BG = '#6d28d9'
+/*
+ * Latar badge memakai hitam netral, bukan merah merek: badge sering muncul
+ * tepat di sebelah garis bantu pink dan di atas elemen yang bisa berwarna apa
+ * saja — termasuk merah. Netral membuatnya selalu terbaca dan tidak bersaing.
+ */
+const BADGE_BG = '#0f172a'
 const BADGE_FG = '#ffffff'
 const FONT = '600 11px ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif'
 

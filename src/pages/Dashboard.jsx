@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FolderOpen, LayoutGrid, Plus, Search, Sparkles, Upload, X } from 'lucide-react'
+import { FolderOpen, LayoutGrid, Plus, Search, Upload, X } from 'lucide-react'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import { useToast } from '../components/ui/Toast'
@@ -128,12 +128,13 @@ export default function Dashboard({ onOpenProject }) {
       {/* ---------------- Header ---------------- */}
       <header className="sticky top-0 z-30 border-b border-ink-200 bg-white/85 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-5 py-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white">
-              <Sparkles size={18} />
-            </div>
+          <div className="flex items-center gap-2.5">
+            {/* Tanda dipakai sendiri, terpisah dari wordmark di berkas logo:
+                logo aslinya bersusun ke bawah, dan di header setinggi 36px
+                wordmark bawaannya akan mengecil sampai tidak terbaca. */}
+            <img src="/logo-mark.png" alt="" aria-hidden className="h-9 w-auto shrink-0" />
             <div className="leading-tight">
-              <p className="text-sm font-bold text-ink-900">Legza</p>
+              <p className="brand-wordmark text-[19px] text-ink-900">Legza</p>
               <p className="text-[11px] text-ink-400">Editor desain lokal</p>
             </div>
           </div>
@@ -175,16 +176,28 @@ export default function Dashboard({ onOpenProject }) {
 
       <main className="mx-auto max-w-7xl px-5 py-8">
         {/* ---------------- Hero + tombol utama ---------------- */}
-        <section className="mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-brand-600 via-brand-600 to-brand-700 px-6 py-8 text-white shadow-lg sm:px-10 sm:py-10">
-          <h1 className="text-2xl font-bold sm:text-3xl">Apa yang mau kamu desain hari ini?</h1>
-          <p className="mt-1.5 max-w-xl text-sm text-brand-100">
+        <section className="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-brand-600 via-brand-600 to-brand-700 px-6 py-8 text-white shadow-lg sm:px-10 sm:py-10">
+          {/* Watermark tanda Legza. Logo aslinya merah, jadi tidak akan terlihat
+              di atas latar merah — `brightness(0) invert(1)` memutihkannya
+              sambil mempertahankan alpha, tanpa perlu berkas aset kedua. */}
+          <img
+            src="/logo-mark.png"
+            alt=""
+            aria-hidden
+            className="pointer-events-none absolute -right-6 -top-8 h-56 w-auto select-none opacity-[0.14] [filter:brightness(0)_invert(1)] sm:-right-2 sm:h-64"
+          />
+
+          <h1 className="relative text-2xl font-bold sm:text-3xl">
+            Apa yang mau kamu desain hari ini?
+          </h1>
+          <p className="relative mt-1.5 max-w-xl text-sm text-brand-100">
             Semua project tersimpan di browser komputermu — tanpa server, tanpa internet.
           </p>
           <Button
             size="lg"
             variant="light"
             onClick={() => setSizePicker({ open: true, presetId: null })}
-            className="mt-5"
+            className="relative mt-5"
           >
             <Plus size={18} /> Buat Desain Baru
           </Button>

@@ -8,6 +8,40 @@ Dibangun dengan **React (Vite) + Fabric.js + Tailwind CSS**.
 
 ---
 
+## Merek & tema
+
+Warna merek diambil langsung dari logo: **`#e11620`**.
+
+| Aset | Berkas | Dipakai untuk |
+| --- | --- | --- |
+| Logo penuh | `public/logo.png` | Arsip merek (tanda + wordmark, bersusun) |
+| Tanda saja | `public/logo-mark.png` | Header dashboard, bilah editor, watermark hero |
+| Ikon aplikasi | `public/icon-192.png`, `public/icon-512.png` | Manifest PWA, apple-touch-icon |
+| Favicon | `public/favicon-32.png` | Tab browser |
+
+Logo aslinya **bersusun ke bawah** (tanda di atas, wordmark di bawah). Di header
+setinggi 36 px, wordmark bawaannya akan mengecil sampai tidak terbaca — jadi yang
+dipakai di sana adalah tandanya saja, disandingkan dengan wordmark "Legza" yang
+dirender sebagai teks. Kelas `.brand-wordmark` meniru karakter brush logo lewat
+font sistem: bobot 800, tracking rapat, dan kemiringan italic. Tidak ada webfont
+yang diunduh — aplikasi ini berjanji tidak pernah melakukan request jaringan.
+
+Seluruh warna UI mengalir dari satu ramp `--color-brand-*` di `src/index.css`,
+sehingga tombol, tab aktif, cincin fokus, border terpilih, dan ikon aksen ikut
+berubah hanya dengan mengganti ramp itu. Kontras sudah diperiksa terhadap
+WCAG AA: putih di atas `brand-600` 4,85:1, putih di atas `brand-700` 7,0:1, dan
+`brand-700` di atas `brand-50` 6,6:1.
+
+Dua warna sengaja **tidak** ikut merah:
+
+- **Garis bantu smart guide** tetap pink `#ff2d95`, dan **badge pengukuran**
+  memakai hitam netral. Keduanya digambar di atas karya pengguna yang bisa
+  berwarna apa saja — termasuk merah — jadi keduanya harus kontras terhadap
+  isi kanvas, bukan senada dengan merek.
+- **Toast berhasil** tetap hijau, karena itu warna semantik, bukan merek.
+
+---
+
 ## Menjalankan
 
 ```bash

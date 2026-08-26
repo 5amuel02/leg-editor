@@ -601,7 +601,7 @@ function FillSection({ src, update }) {
           value={mode}
           onChange={(m) =>
             m === 'solid'
-              ? update({ fill: gradient.enabled ? gradient.from : src.fill || '#8b5cf6' })
+              ? update({ fill: gradient.enabled ? gradient.from : src.fill || '#e11620' })
               : update(gradientPatch({ ...DEFAULT_GRADIENT }))
           }
           options={[

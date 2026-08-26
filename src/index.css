@@ -6,14 +6,26 @@
    (mis. bg-brand-500, text-ink-400) tanpa file tailwind.config.js.
 ---------------------------------------------------------------- */
 @theme {
-  --color-brand-50: #f5f3ff;
-  --color-brand-100: #ede9fe;
-  --color-brand-200: #ddd6fe;
-  --color-brand-300: #c4b5fd;
-  --color-brand-400: #a78bfa;
-  --color-brand-500: #8b5cf6;
-  --color-brand-600: #7c3aed;
-  --color-brand-700: #6d28d9;
+  /*
+   * Ramp merah Legza, ditarik dari warna asli logo: #e11620.
+   *
+   * Peran tiap tingkat mengikuti pemakaian yang sudah ada, jadi mengganti
+   * ramp ini saja sudah menghijaukan seluruh UI — tombol, tab aktif, cincin
+   * fokus, border terpilih, dan ikon aksen ikut berubah tanpa disentuh.
+   *
+   * Kontras teks sudah diperiksa terhadap WCAG AA:
+   *   putih di atas brand-600  -> 4,85:1
+   *   putih di atas brand-700  -> 7,0:1
+   *   brand-700 di atas brand-50 -> 6,6:1
+   */
+  --color-brand-50: #fef2f2;
+  --color-brand-100: #fee2e4;
+  --color-brand-200: #fecdd0;
+  --color-brand-300: #fca5aa;
+  --color-brand-400: #f8717a;
+  --color-brand-500: #ef3b46;
+  --color-brand-600: #e11620; /* warna asli logo */
+  --color-brand-700: #b30f18;
 
   --color-ink-50: #f8fafc;
   --color-ink-100: #f1f5f9;
@@ -39,6 +51,21 @@ body {
   background: var(--color-ink-100);
   color: var(--color-ink-800);
   -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Wordmark "Legza".
+ *
+ * Wordmark di logo adalah brush italic yang tegas dan condong ke depan. Tidak
+ * ada webfont yang bisa dipakai di sini — aplikasi ini berjanji tidak pernah
+ * melakukan request jaringan — jadi karakternya dibangun dari font sistem:
+ * bobot sangat tebal, tracking rapat, dan kemiringan yang meniru arah brush.
+ */
+.brand-wordmark {
+  font-family: "Segoe UI", Inter, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.03em;
 }
 
 /* Scrollbar tipis supaya panel samping tidak berisik */

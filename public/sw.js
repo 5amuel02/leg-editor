@@ -18,7 +18,16 @@ const CACHE = 'legza-v1'
  * didaftarkan di sini karena namanya mengandung hash yang berubah tiap build;
  * berkas-berkas itu masuk cache saat pertama kali diminta.
  */
-const SHELL = ['/', '/index.html', '/favicon.svg', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png']
+const SHELL = [
+  '/',
+  '/index.html',
+  '/manifest.webmanifest',
+  '/favicon-32.png',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/logo.png',
+  '/logo-mark.png',
+]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

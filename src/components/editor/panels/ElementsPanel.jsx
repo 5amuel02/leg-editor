@@ -53,7 +53,7 @@ function ShapePreview({ id, color }) {
  */
 export default function ElementsPanel() {
   const { addObject, size, activePage } = useEditor()
-  const [fill, setFill] = useState('#8b5cf6')
+  const [fill, setFill] = useState('#e11620')
   const [frameTab, setFrameTab] = useState('basic')
 
   const locked = !!activePage?.locked

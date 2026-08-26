@@ -148,7 +148,7 @@ export default function FloatingToolbar({ onRequestCrop }) {
           size="sm"
           label="Warna isi (fill)"
           allowNone
-          value={typeof target?.fill === 'string' ? target.fill : '#8b5cf6'}
+          value={typeof target?.fill === 'string' ? target.fill : '#e11620'}
           onChange={(c) => updateSelected({ fill: c })}
         />
       )}

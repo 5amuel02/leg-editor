@@ -60,13 +60,20 @@ export const CANVAS_PRESETS = [
  * Shortcut jenis desain yang tampil di dashboard (visual saja, seperti Canva).
  * Diklik -> langsung membuat desain baru dengan ukuran terkait.
  */
+/*
+ * Gradien kartu pintasan sengaja dijaga dalam keluarga hangat (merah - rose -
+ * oranye - amber) plus satu netral. Palet pelangi sebelumnya bertabrakan
+ * dengan merek merah, tapi menyeragamkan semuanya menjadi merah membuat
+ * keenam kartu sulit dibedakan sekilas — yang justru merusak fungsinya
+ * sebagai pintasan. Dokumen A4 memakai netral karena memang mewakili kertas.
+ */
 export const DESIGN_SHORTCUTS = [
-  { id: 'ig-post', label: 'Instagram Post', gradient: 'from-pink-500 to-rose-500', ratio: 'aspect-square' },
-  { id: 'ig-story', label: 'Story', gradient: 'from-fuchsia-500 to-purple-600', ratio: 'aspect-[9/16]' },
-  { id: 'presentation', label: 'Presentasi', gradient: 'from-sky-500 to-blue-600', ratio: 'aspect-video' },
-  { id: 'a4', label: 'Dokumen A4', gradient: 'from-emerald-500 to-teal-600', ratio: 'aspect-[1/1.414]' },
+  { id: 'ig-post', label: 'Instagram Post', gradient: 'from-red-500 to-red-700', ratio: 'aspect-square' },
+  { id: 'ig-story', label: 'Story', gradient: 'from-rose-500 to-red-600', ratio: 'aspect-[9/16]' },
+  { id: 'presentation', label: 'Presentasi', gradient: 'from-orange-500 to-red-600', ratio: 'aspect-video' },
+  { id: 'a4', label: 'Dokumen A4', gradient: 'from-stone-500 to-stone-700', ratio: 'aspect-[1/1.414]' },
   { id: 'poster', label: 'Poster', gradient: 'from-amber-500 to-orange-600', ratio: 'aspect-[1/1.414]' },
-  { id: 'yt-thumb', label: 'Thumbnail YT', gradient: 'from-red-500 to-rose-600', ratio: 'aspect-video' },
+  { id: 'yt-thumb', label: 'Thumbnail YT', gradient: 'from-red-700 to-rose-900', ratio: 'aspect-video' },
 ]
 
 /** Daftar font aman yang pasti tersedia offline (system font stack). */
