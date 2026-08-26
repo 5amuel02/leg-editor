@@ -24,7 +24,7 @@ import { STROKE_STYLES } from '../../lib/constants'
 import IconButton from '../ui/IconButton'
 import ColorPicker from '../ui/ColorPicker'
 import Popover from './Popover'
-import { FieldRow, SliderInput } from '../ui/Field'
+import { SliderInput } from '../ui/Field'
 
 /**
  * Toolbar kontekstual yang mengambang tepat di atas elemen terpilih.
@@ -72,8 +72,9 @@ export default function FloatingToolbar({ onRequestCrop }) {
   const type = target ? getLegType(target) : 'multi'
   const isText = type === 'text'
   const isImage = type === 'image'
-  const isStrokeOnly = type === 'line' || type === 'arrow' || type === 'draw'
-  const canFill = !isImage && !isStrokeOnly && type !== 'table'
+  // fabric.Line tidak merender `fill`, dan gambar diwarnai oleh isinya sendiri —
+  // selain dua itu, semua elemen punya warna isi & warna garis yang terpisah.
+  const canFill = !isImage && type !== 'line'
 
   // Bila elemen menempel di tepi atas, toolbar dipindah ke bawah elemen.
   const placeBelow = position.top < 56
@@ -137,45 +138,44 @@ export default function FloatingToolbar({ onRequestCrop }) {
 
       <span className="mx-1 h-5 w-px bg-ink-200" />
 
-      {/* Warna isi */}
+      {/* Warna isi — kotak terisi penuh */}
       {canFill && (
         <ColorPicker
           size="sm"
-          label="Warna isi"
+          label="Warna isi (fill)"
           allowNone
           value={typeof target?.fill === 'string' ? target.fill : '#8b5cf6'}
           onChange={(c) => updateSelected({ fill: c })}
         />
       )}
 
-      {/* Pengaturan garis / border */}
-      {!isImage && (
-        <Popover
-          width="w-60"
-          trigger={(toggle, open) => (
-            <IconButton label="Garis / border" size="sm" active={open} onClick={toggle}>
-              <Minus size={15} strokeWidth={3} />
-            </IconButton>
-          )}
-        >
-          {() => (
-            <div className="space-y-3">
-              <FieldRow label="Warna garis">
-                <ColorPicker
-                  size="sm"
-                  align="right"
-                  label="Warna garis"
-                  allowNone={!isStrokeOnly}
-                  value={typeof target?.stroke === 'string' ? target.stroke : null}
-                  onChange={(c) =>
-                    updateSelected({
-                      stroke: c,
-                      strokeWidth: c && !target?.strokeWidth ? 2 : target?.strokeWidth,
-                    })
-                  }
-                />
-              </FieldRow>
+      {/* Warna garis — cincin, selalu tampil berdampingan dengan warna isi
+          supaya jelas keduanya diatur terpisah. */}
+      <ColorPicker
+        size="sm"
+        variant="ring"
+        label="Warna garis / outline (stroke)"
+        allowNone
+        value={typeof target?.stroke === 'string' ? target.stroke : null}
+        onChange={(c) =>
+          updateSelected({
+            stroke: c,
+            strokeWidth: c && !target?.strokeWidth ? 2 : target?.strokeWidth,
+          })
+        }
+      />
 
+      {/* Ketebalan & jenis garis */}
+      <Popover
+        width="w-60"
+        trigger={(toggle, open) => (
+          <IconButton label="Ketebalan & jenis garis" size="sm" active={open} onClick={toggle}>
+            <Minus size={15} strokeWidth={3} />
+          </IconButton>
+        )}
+      >
+        {() => (
+          <div className="space-y-3">
               <div>
                 <p className="mb-1 text-xs font-medium text-ink-500">Ketebalan</p>
                 <SliderInput
@@ -211,10 +211,9 @@ export default function FloatingToolbar({ onRequestCrop }) {
                   ))}
                 </div>
               </div>
-            </div>
-          )}
-        </Popover>
-      )}
+          </div>
+        )}
+      </Popover>
 
       {/* Posisi: align cepat + urutan tumpukan */}
       <Popover

@@ -46,6 +46,9 @@ export default function TopBar({ onBack, onExportPNG, onExportAllPNG, onExportPD
 
   const [name, setName] = useState(project.name)
   const [savedFlash, setSavedFlash] = useState(false)
+  // Resolusi ekspor dipakai bersama oleh PNG per halaman, PNG semua halaman,
+  // dan PDF — supaya pilihan user tidak diabaikan oleh salah satu tombol.
+  const [exportScale, setExportScale] = useState(2)
 
   useEffect(() => setName(project.name), [project.name])
 
@@ -163,27 +166,30 @@ export default function TopBar({ onBack, onExportPNG, onExportAllPNG, onExportPD
         >
           {(close) => (
             <div className="space-y-3">
+              {/* Resolusi dipilih lebih dulu, lalu berlaku untuk semua tombol di bawahnya */}
               <div>
                 <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-400">
-                  PNG — halaman ini ({activeIndex + 1}/{pages.length})
+                  Resolusi
                 </p>
                 <div className="grid grid-cols-3 gap-1.5">
                   {[1, 2, 3].map((m) => (
                     <button
                       key={m}
                       type="button"
-                      onClick={() => {
-                        close()
-                        onExportPNG(m)
-                      }}
-                      className="rounded-lg border border-ink-200 py-1.5 text-xs font-medium text-ink-700 hover:bg-ink-50"
+                      onClick={() => setExportScale(m)}
+                      className={`rounded-lg border py-1.5 text-xs font-medium transition ${
+                        exportScale === m
+                          ? 'border-brand-500 bg-brand-50 text-brand-700'
+                          : 'border-ink-200 text-ink-700 hover:bg-ink-50'
+                      }`}
                     >
                       {m}x
                     </button>
                   ))}
                 </div>
                 <p className="mt-1 text-[10px] text-ink-400">
-                  2x/3x menghasilkan resolusi tinggi ({project.size.width * 2}×{project.size.height * 2} px pada 2x).
+                  Hasil pada {exportScale}x: {project.size.width * exportScale} ×{' '}
+                  {project.size.height * exportScale} px per halaman.
                 </p>
               </div>
 
@@ -193,22 +199,36 @@ export default function TopBar({ onBack, onExportPNG, onExportAllPNG, onExportPD
                 type="button"
                 onClick={() => {
                   close()
-                  onExportAllPNG(2)
+                  onExportPNG(exportScale)
                 }}
                 className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs text-ink-700 hover:bg-ink-50"
               >
-                <FileDown size={15} /> Semua halaman sebagai PNG (2x)
+                <FileDown size={15} />
+                PNG — halaman ini ({activeIndex + 1}/{pages.length}) @{exportScale}x
               </button>
 
               <button
                 type="button"
                 onClick={() => {
                   close()
-                  onExportPDF()
+                  onExportAllPNG(exportScale)
+                }}
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs text-ink-700 hover:bg-ink-50"
+              >
+                <FileDown size={15} />
+                Semua halaman sebagai PNG @{exportScale}x
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  close()
+                  onExportPDF(exportScale)
                 }}
                 className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs text-ink-700 hover:bg-ink-50"
               >
                 <FileDown size={15} /> PDF multi-halaman ({pages.filter((p) => !p.hidden).length} halaman)
+                @{exportScale}x
               </button>
             </div>
           )}

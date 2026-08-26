@@ -176,7 +176,9 @@ export default function PropertiesPanel({ onRequestCrop }) {
         {target && type === 'table' && <TableProperties target={target} update={updateSelected} />}
 
         {target && (type === 'line' || type === 'arrow' || type === 'draw') && (
-          <FillStrokeProperties target={target} update={updateSelected} withFill={false} />
+          // fabric.Line tidak merender `fill`, jadi khusus garis lurus kontrol
+          // warna isi disembunyikan; panah & coretan tetap bisa diisi warna.
+          <FillStrokeProperties target={target} update={updateSelected} withFill={type !== 'line'} />
         )}
 
         {target && type === 'image' && (
@@ -445,7 +447,7 @@ function FillStrokeProperties({ target, update, withFill }) {
       <SectionTitle>Warna & garis</SectionTitle>
 
       {withFill && (
-        <FieldRow label="Isi">
+        <FieldRow label="Warna isi">
           <ColorPicker
             size="sm"
             align="right"
@@ -457,9 +459,10 @@ function FillStrokeProperties({ target, update, withFill }) {
         </FieldRow>
       )}
 
-      <FieldRow label="Garis">
+      <FieldRow label="Warna garis">
         <ColorPicker
           size="sm"
+          variant="ring"
           align="right"
           label="Warna garis"
           allowNone

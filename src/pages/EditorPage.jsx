@@ -146,8 +146,8 @@ function EditorShell({ onBack, toast }) {
   const handleExportAllPNG = (multiplier) =>
     withBusy('Ekspor semua halaman', (p) => exportAllPagesPNG(p, multiplier))
 
-  const handleExportPDF = () =>
-    withBusy('Ekspor PDF', (p) => exportProjectPDF(p, { multiplier: 2 }))
+  const handleExportPDF = (multiplier = 2) =>
+    withBusy('Ekspor PDF', (p) => exportProjectPDF(p, { multiplier }))
 
   /* ---------------------------------------------------------------- */
   /* Simpan / muat berkas .json                                        */

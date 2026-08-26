@@ -15,6 +15,7 @@ export default function ColorPicker({
   allowNone = false,
   size = 'md',
   align = 'left',
+  variant = 'fill', // 'fill' = kotak terisi warna, 'ring' = cincin (untuk garis)
 }) {
   const [open, setOpen] = useState(false)
   const [hex, setHex] = useState(value || '#000000')
@@ -49,11 +50,20 @@ export default function ColorPicker({
         aria-label={label}
         onClick={() => setOpen((o) => !o)}
         className={`${box} relative overflow-hidden rounded-lg border border-ink-200 shadow-sm transition hover:border-ink-300`}
-        style={{
-          background: isNone
-            ? 'repeating-conic-gradient(#e2e8f0 0% 25%, #ffffff 0% 50%) 50% / 10px 10px'
-            : value,
-        }}
+        style={
+          // Varian "ring" menampilkan warna sebagai cincin tebal dengan bagian
+          // tengah kosong, sehingga sekilas terbaca sebagai warna garis/outline.
+          variant === 'ring'
+            ? {
+                background: '#ffffff',
+                boxShadow: isNone ? undefined : `inset 0 0 0 ${size === 'sm' ? 4 : 5}px ${value}`,
+              }
+            : {
+                background: isNone
+                  ? 'repeating-conic-gradient(#e2e8f0 0% 25%, #ffffff 0% 50%) 50% / 10px 10px'
+                  : value,
+              }
+        }
       >
         {isNone && (
           <span className="absolute inset-0 flex items-center justify-center text-ink-400">
