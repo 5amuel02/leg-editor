@@ -20,7 +20,7 @@ import {
   Unlock,
 } from 'lucide-react'
 import { useEditor } from '../../context/EditorContext'
-import { getLegType } from '../../lib/fabricUtils'
+import { getLegType, readTableStyle } from '../../lib/fabricUtils'
 import { CROP_SHAPES, FONT_FAMILIES, STROKE_STYLES } from '../../lib/constants'
 import ColorPicker from '../ui/ColorPicker'
 import IconButton from '../ui/IconButton'
@@ -146,9 +146,11 @@ export default function PropertiesPanel({ onRequestCrop }) {
         {/* ---------------- Properti khusus jenis elemen ---------------- */}
         {target && type === 'text' && <TextProperties target={target} update={updateSelected} />}
 
-        {target && (type === 'shape' || type === 'table') && (
+        {target && type === 'shape' && (
           <FillStrokeProperties target={target} update={updateSelected} withFill />
         )}
+
+        {target && type === 'table' && <TableProperties target={target} update={updateSelected} />}
 
         {target && (type === 'line' || type === 'arrow' || type === 'draw') && (
           <FillStrokeProperties target={target} update={updateSelected} withFill={false} />
@@ -263,7 +265,7 @@ function TextProperties({ target, update }) {
         />
       </FieldRow>
 
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         <IconButton
           size="sm"
           label="Tebal"
@@ -414,6 +416,95 @@ function FillStrokeProperties({ target, update, withFill }) {
           />
         </div>
       )}
+    </div>
+  )
+}
+
+function TableProperties({ target, update }) {
+  const style = readTableStyle(target)
+  const dashId =
+    STROKE_STYLES.find((s) => JSON.stringify(s.dash) === JSON.stringify(style.strokeDashArray))?.id ||
+    'solid'
+
+  return (
+    <div className="space-y-3">
+      <SectionTitle>Tabel</SectionTitle>
+
+      <FieldRow label="Latar sel">
+        <ColorPicker
+          size="sm"
+          align="right"
+          label="Warna latar sel"
+          allowNone
+          value={typeof style.fill === 'string' ? style.fill : null}
+          onChange={(c) => update({ fill: c })}
+        />
+      </FieldRow>
+
+      <FieldRow label="Garis tabel">
+        <ColorPicker
+          size="sm"
+          align="right"
+          label="Warna garis tabel"
+          value={typeof style.stroke === 'string' ? style.stroke : '#334155'}
+          onChange={(c) => update({ stroke: c })}
+        />
+      </FieldRow>
+
+      <FieldRow label="Warna teks">
+        <ColorPicker
+          size="sm"
+          align="right"
+          label="Warna teks tabel"
+          value={typeof style.textColor === 'string' ? style.textColor : '#0f172a'}
+          onChange={(c) => update({ textColor: c })}
+        />
+      </FieldRow>
+
+      <div>
+        <p className="mb-1 text-xs font-medium text-ink-500">Ketebalan garis</p>
+        <SliderInput
+          min={0}
+          max={20}
+          step={1}
+          value={style.strokeWidth}
+          onChange={(v) => update({ strokeWidth: v })}
+        />
+      </div>
+
+      <div>
+        <p className="mb-1 text-xs font-medium text-ink-500">Jenis garis</p>
+        <div className="flex gap-1.5">
+          {STROKE_STYLES.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => update({ strokeDashArray: s.dash })}
+              className={`flex-1 rounded-lg border px-2 py-1.5 text-[11px] transition ${
+                dashId === s.id
+                  ? 'border-brand-500 bg-brand-50 text-brand-700'
+                  : 'border-ink-200 text-ink-600 hover:bg-ink-50'
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <FieldRow label="Ukuran teks">
+        <NumberInput
+          className="w-20"
+          value={style.fontSize}
+          min={6}
+          max={200}
+          onChange={(v) => update({ fontSize: v })}
+        />
+      </FieldRow>
+
+      <p className="rounded-lg bg-ink-50 px-3 py-2 text-[11px] text-ink-500">
+        Klik dua kali sebuah sel di kanvas untuk mengetik isinya.
+      </p>
     </div>
   )
 }

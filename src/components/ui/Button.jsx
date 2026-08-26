@@ -4,6 +4,8 @@
  */
 const VARIANTS = {
   primary: 'bg-brand-600 text-white hover:bg-brand-700 shadow-sm',
+  // Varian terang untuk dipakai di atas latar berwarna brand (mis. hero dashboard).
+  light: 'bg-white text-brand-700 hover:bg-brand-50 shadow-sm',
   secondary: 'bg-white text-ink-700 border border-ink-200 hover:bg-ink-50',
   ghost: 'text-ink-600 hover:bg-ink-100',
   subtle: 'bg-ink-100 text-ink-700 hover:bg-ink-200',

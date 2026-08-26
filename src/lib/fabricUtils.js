@@ -369,6 +369,62 @@ export function createTable({
   return tagObject(group, 'table', `Tabel ${rows}x${cols}`)
 }
 
+/** Properti sel tabel yang harus diteruskan ke Rect di dalam grup. */
+const TABLE_CELL_KEYS = ['fill', 'stroke', 'strokeWidth', 'strokeDashArray']
+/** Properti teks tabel yang harus diteruskan ke Textbox di dalam grup. */
+const TABLE_TEXT_KEYS = ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'textAlign']
+
+/**
+ * Menerapkan perubahan ke sebuah tabel.
+ *
+ * Fabric tidak meneruskan `fill`/`stroke` sebuah Group ke anak-anaknya,
+ * jadi properti tampilan disalurkan langsung ke sel (Rect) dan teks
+ * (Textbox) di dalamnya. Properti selain itu — posisi, skala, rotasi,
+ * transparansi — tetap diterapkan pada grup.
+ *
+ * `textColor` adalah kunci khusus untuk mewarnai teks tabel tanpa
+ * bentrok dengan `fill` yang dipakai untuk latar sel.
+ */
+export function applyTablePatch(group, patch) {
+  const groupPatch = {}
+  Object.entries(patch).forEach(([key, value]) => {
+    if (TABLE_CELL_KEYS.includes(key) || TABLE_TEXT_KEYS.includes(key) || key === 'textColor') return
+    groupPatch[key] = value
+  })
+  group.set(groupPatch)
+
+  group.forEachObject?.((child) => {
+    if (child.type === 'rect') {
+      TABLE_CELL_KEYS.forEach((key) => {
+        if (key in patch) child.set(key, patch[key])
+      })
+    } else {
+      TABLE_TEXT_KEYS.forEach((key) => {
+        if (key in patch) child.set(key, patch[key])
+      })
+      if ('textColor' in patch) child.set('fill', patch.textColor)
+    }
+  })
+
+  group.setCoords()
+  return group
+}
+
+/** Mengambil nilai style tabel dari sel/teks pertama untuk ditampilkan di panel. */
+export function readTableStyle(group) {
+  const children = group.getObjects?.() || []
+  const cell = children.find((c) => c.type === 'rect')
+  const text = children.find((c) => c.type !== 'rect')
+  return {
+    fill: cell?.fill ?? '#ffffff',
+    stroke: cell?.stroke ?? '#334155',
+    strokeWidth: cell?.strokeWidth ?? 1,
+    strokeDashArray: cell?.strokeDashArray ?? null,
+    textColor: text?.fill ?? '#0f172a',
+    fontSize: text?.fontSize ?? 24,
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* Snapshot / thumbnail                                                */
 /* ------------------------------------------------------------------ */

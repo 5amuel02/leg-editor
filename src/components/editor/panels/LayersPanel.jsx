@@ -152,8 +152,9 @@ export default function LayersPanel() {
                 </span>
               </button>
 
-              {/* Naik / turun satu tingkat */}
-              <div className="flex opacity-0 transition group-hover:opacity-100">
+              {/* Aksi tambahan hanya muncul saat hover, sehingga nama elemen
+                  tetap punya ruang lebar saat panel dalam keadaan diam. */}
+              <div className="hidden group-hover:flex">
                 <IconButton
                   size="sm"
                   label="Naikkan satu tingkat"

@@ -12,6 +12,7 @@ import {
   EXTRA_PROPS,
   applyLock,
   applyStyle,
+  applyTablePatch,
   getLegType,
   pickStyle,
   serializeCanvas,
@@ -342,10 +343,18 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
   /* Operasi halaman                                                     */
   /* ------------------------------------------------------------------ */
 
-  /** Menerapkan perubahan pada array pages lalu ikut menyimpan. */
+  /**
+   * Menerapkan perubahan pada array pages lalu menjadwalkan penyimpanan.
+   *
+   * `collect: false` melewati pengambilan snapshot kanvas — dipakai untuk
+   * perubahan metadata murni (ganti nama, sembunyi, kunci, warna latar)
+   * supaya tidak ada render thumbnail di setiap ketikan. Isi halaman aktif
+   * tetap aman karena kanvas adalah sumber kebenaran dan akan ikut terekam
+   * pada operasi berikutnya yang memang membutuhkannya.
+   */
   const mutatePages = useCallback(
-    (updater, { nextIndex } = {}) => {
-      const current = collectActivePage()
+    (updater, { nextIndex, collect = true } = {}) => {
+      const current = collect ? collectActivePage() : projectRef.current
       const pages = updater(current.pages)
       const next = { ...current, pages }
       const cover = pages.find((p) => !p.hidden)?.thumbnail || pages[0]?.thumbnail || null
@@ -438,7 +447,9 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
 
   const updatePage = useCallback(
     (index, patch) => {
-      mutatePages((pages) => pages.map((p, i) => (i === index ? { ...p, ...patch } : p)))
+      mutatePages((pages) => pages.map((p, i) => (i === index ? { ...p, ...patch } : p)), {
+        collect: false,
+      })
       // Bila halaman aktif dikunci/dibuka, seluruh objek harus ikut disinkronkan.
       if (index === activeIndexRef.current && 'locked' in patch && canvasRef.current) {
         syncLockState(canvasRef.current, patch.locked)
@@ -458,8 +469,10 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       canvas.backgroundColor = color
       canvas.requestRenderAll()
       pushHistory()
-      mutatePages((pages) =>
-        pages.map((p, i) => (i === activeIndexRef.current ? { ...p, background: color } : p)),
+      mutatePages(
+        (pages) =>
+          pages.map((p, i) => (i === activeIndexRef.current ? { ...p, background: color } : p)),
+        { collect: false },
       )
     },
     [mutatePages, pushHistory],
@@ -498,6 +511,11 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       const targets = canvas.getActiveObjects()
       if (targets.length === 0) return
       targets.forEach((obj) => {
+        // Tabel butuh perlakuan khusus: style diteruskan ke sel & teks di dalamnya.
+        if (getLegType(obj) === 'table') {
+          applyTablePatch(obj, patch)
+          return
+        }
         obj.set(patch)
         obj.setCoords()
       })

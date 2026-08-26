@@ -166,8 +166,9 @@ export default function Dashboard({ onOpenProject }) {
           </p>
           <Button
             size="lg"
+            variant="light"
             onClick={() => setSizePicker({ open: true, presetId: null })}
-            className="mt-5 bg-white text-brand-700 hover:bg-brand-50"
+            className="mt-5"
           >
             <Plus size={18} /> Buat Desain Baru
           </Button>
@@ -186,9 +187,13 @@ export default function Dashboard({ onOpenProject }) {
                   onClick={() => setSizePicker({ open: true, presetId: s.id })}
                   className="group flex flex-col items-center gap-2"
                 >
-                  <div
-                    className={`w-full ${s.ratio} rounded-xl bg-gradient-to-br ${s.gradient} shadow-sm transition group-hover:-translate-y-0.5 group-hover:shadow-md`}
-                  />
+                  {/* Kotak berukuran tetap supaya semua kartu sejajar, sementara
+                      bentuk di dalamnya tetap mengikuti rasio aslinya. */}
+                  <div className="flex h-24 w-full items-center justify-center">
+                    <div
+                      className={`h-full ${s.ratio} max-w-full rounded-xl bg-gradient-to-br ${s.gradient} shadow-sm transition group-hover:-translate-y-0.5 group-hover:shadow-md`}
+                    />
+                  </div>
                   <div className="text-center">
                     <p className="text-xs font-semibold text-ink-700">{s.label}</p>
                     <p className="text-[10px] text-ink-400">
