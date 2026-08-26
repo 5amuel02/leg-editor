@@ -21,7 +21,16 @@ import {
   syncLockState,
   tagObject,
 } from '../lib/fabricUtils'
-import { computeSnap, drawGuides, isSnapSuppressed, snapAngle } from '../lib/snapping'
+import {
+  applyResizeSnap,
+  computeResizeSnap,
+  computeSnap,
+  drawGuides,
+  isSnapSuppressed,
+  isUniformScaling,
+  snapAngle,
+} from '../lib/snapping'
+import { drawMeasurement } from '../lib/measurement'
 import { MAX_ZOOM, MIN_ZOOM, THUMB_WIDTH } from '../lib/constants'
 import { createEmptyPage, renumberPages, uid } from '../lib/project'
 import { FONTS_CHANGED_EVENT } from '../lib/fonts'
@@ -82,6 +91,7 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
   const copiedStyleRef = useRef(null)
   const snapEnabledRef = useRef(true)
   const guidesRef = useRef([]) // garis bantu yang sedang tampil
+  const measureRef = useRef(null) // { target, mode } badge ukuran/posisi
 
   useEffect(() => {
     projectRef.current = project
@@ -275,14 +285,46 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
         canvas.requestRenderAll()
       }
 
+      /** Membersihkan seluruh lapisan bantu: garis bantu dan badge ukuran. */
+      const clearOverlays = () => {
+        if (guidesRef.current.length === 0 && !measureRef.current) return
+        guidesRef.current = []
+        measureRef.current = null
+        canvas.requestRenderAll()
+      }
+
       canvas.on('selection:cleared', () => {
         setSelection([])
-        clearGuides()
+        clearOverlays()
       })
-      canvas.on('object:scaling', () => setPropsVersion((v) => v + 1))
+
+      canvas.on('object:scaling', (e) => {
+        setPropsVersion((v) => v + 1)
+        measureRef.current = { target: e.target, mode: 'size' }
+
+        if (!snapEnabledRef.current || isSnapSuppressed(e.e)) {
+          clearGuides()
+          return
+        }
+
+        const { width, height } = projectRef.current.size
+        const transform = e.transform || {}
+        const { desired, guides } = computeResizeSnap({
+          canvas,
+          target: e.target,
+          handle: transform.corner,
+          uniform: isUniformScaling(e.target, transform),
+          sceneWidth: width,
+          sceneHeight: height,
+          zoom: canvas.getZoom(),
+        })
+        if (desired) applyResizeSnap(e.target, desired, transform.action)
+        guidesRef.current = guides
+      })
 
       canvas.on('object:moving', (e) => {
         setPropsVersion((v) => v + 1)
+        measureRef.current = { target: e.target, mode: 'position' }
         if (!snapEnabledRef.current || isSnapSuppressed(e.e)) {
           clearGuides()
           return
@@ -304,18 +346,22 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
 
       canvas.on('object:rotating', (e) => {
         setPropsVersion((v) => v + 1)
+        measureRef.current = { target: e.target, mode: 'angle' }
         if (!snapEnabledRef.current || isSnapSuppressed(e.e)) return
         const snapped = snapAngle(e.target.angle)
         if (snapped !== null) e.target.rotate(snapped)
       })
 
-      // Garis bantu digambar setelah objek selesai dirender tiap frame.
+      // Lapisan bantu digambar setelah objek selesai dirender tiap frame.
       canvas.on('after:render', () => {
         if (guidesRef.current.length) drawGuides(canvas, guidesRef.current)
+        if (measureRef.current) {
+          drawMeasurement(canvas, measureRef.current.target, measureRef.current.mode)
+        }
       })
 
-      // Begitu tombol mouse dilepas, garis bantu langsung hilang.
-      canvas.on('mouse:up', clearGuides)
+      // Begitu tombol mouse dilepas, garis bantu & badge langsung hilang.
+      canvas.on('mouse:up', clearOverlays)
 
       // Path baru dari mode menggambar diberi identitas agar muncul di panel Layer.
       canvas.on('path:created', (e) => {

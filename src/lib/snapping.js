@@ -154,6 +154,205 @@ export function computeSnap({ canvas, target, sceneWidth, sceneHeight, zoom }) {
   return { dx, dy, guides }
 }
 
+/* ------------------------------------------------------------------ */
+/* Snapping saat resize                                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Tepi kotak batas yang ikut bergerak untuk tiap handle.
+ * Handle sisi menggerakkan satu tepi, handle sudut menggerakkan dua.
+ */
+const HANDLE_EDGES = {
+  ml: ['left'],
+  mr: ['right'],
+  mt: ['top'],
+  mb: ['bottom'],
+  tl: ['left', 'top'],
+  tr: ['right', 'top'],
+  bl: ['left', 'bottom'],
+  br: ['right', 'bottom'],
+}
+
+/**
+ * Apakah transformasi yang sedang berjalan mengunci rasio aspek?
+ *
+ * Ditentukan secara empiris dengan membandingkan rasio skala terhadap nilai
+ * awal transformasi, bukan dari `canvas.uniformScaling` dan tombol Shift.
+ * Membaca konfigurasi berarti menebak ulang aturan internal Fabric; mengukur
+ * hasilnya selalu benar apa pun aturannya.
+ */
+export function isUniformScaling(target, transform) {
+  if (!transform || transform.action !== 'scale') return false
+  const original = transform.original
+  if (!original?.scaleX || !original?.scaleY) return false
+  const rx = (target.scaleX || 1) / original.scaleX
+  const ry = (target.scaleY || 1) / original.scaleY
+  return Math.abs(rx - ry) < 1e-6
+}
+
+/**
+ * Menghitung kotak batas tujuan untuk elemen yang sedang diresize.
+ *
+ * Hanya tepi yang benar-benar digerakkan handle yang dijadikan acuan — tepi
+ * seberangnya adalah jangkar dan harus tetap di tempatnya, persis seperti
+ * perilaku resize biasa.
+ *
+ * Elemen yang diputar dilewati: pada objek berotasi, `scaleX`/`scaleY` bekerja
+ * di sumbu lokal elemen sehingga tidak lagi bersesuaian satu-satu dengan tepi
+ * kotak batas yang sejajar layar, dan snapping akan terasa meleset.
+ *
+ * @returns {{ desired: {left,top,width,height}|null, guides: Array }}
+ */
+export function computeResizeSnap({
+  canvas,
+  target,
+  handle,
+  uniform,
+  sceneWidth,
+  sceneHeight,
+  zoom,
+}) {
+  const empty = { desired: null, guides: [] }
+  const edges = HANDLE_EDGES[handle]
+  if (!canvas || !target || !edges) return empty
+  if (Math.abs(((target.angle || 0) % 360 + 360) % 360) > 0.01) return empty
+
+  const exclude = new Set([target])
+  target.forEachObject?.((child) => exclude.add(child))
+
+  const box = freshBounds(target)
+  const tolerance = SNAP_THRESHOLD / (zoom || 1)
+  const { vertical, horizontal } = collectTargets(canvas, exclude, sceneWidth, sceneHeight)
+
+  const L = box.left
+  const R = box.left + box.width
+  const T = box.top
+  const B = box.top + box.height
+
+  const found = {}
+  if (edges.includes('left')) found.left = findBestMatch([L], vertical, tolerance)
+  if (edges.includes('right')) found.right = findBestMatch([R], vertical, tolerance)
+  if (edges.includes('top')) found.top = findBestMatch([T], horizontal, tolerance)
+  if (edges.includes('bottom')) found.bottom = findBestMatch([B], horizontal, tolerance)
+
+  const guides = []
+  const guideFor = (edge, match) => {
+    const other = match.candidate.box
+    if (edge === 'left' || edge === 'right') {
+      const from = other ? Math.min(T, other.top) - GUIDE_PADDING : 0
+      const to = other ? Math.max(B, other.top + other.height) + GUIDE_PADDING : sceneHeight
+      guides.push({ axis: 'v', pos: match.pos, from, to })
+    } else {
+      const from = other ? Math.min(L, other.left) - GUIDE_PADDING : 0
+      const to = other ? Math.max(R, other.left + other.width) + GUIDE_PADDING : sceneWidth
+      guides.push({ axis: 'h', pos: match.pos, from, to })
+    }
+  }
+
+  // Ukuran "inti" objek (tanpa tebal garis) dipakai untuk menghitung skala,
+  // karena tebal garis menambah lebar kotak batas secara konstan dan tidak
+  // ikut menskala bersama isi objek.
+  const coreW = (target.width || 0) * (target.scaleX || 1)
+  const coreH = (target.height || 0) * (target.scaleY || 1)
+  const strokeX = box.width - coreW
+  const strokeY = box.height - coreH
+
+  if (uniform) {
+    // Rasio terkunci: hanya satu tepi yang boleh menentukan faktor skala,
+    // yaitu yang paling dekat dengan acuannya.
+    let pick = null
+    Object.entries(found).forEach(([edge, match]) => {
+      if (!match) return
+      if (!pick || Math.abs(match.delta) < Math.abs(pick.match.delta)) pick = { edge, match }
+    })
+    if (!pick) return empty
+
+    const d = pick.match.delta
+    let scale
+    if (pick.edge === 'right') scale = (coreW + d) / coreW
+    else if (pick.edge === 'left') scale = (coreW - d) / coreW
+    else if (pick.edge === 'bottom') scale = (coreH + d) / coreH
+    else scale = (coreH - d) / coreH
+
+    if (!Number.isFinite(scale) || scale <= 0) return empty
+
+    const width = coreW * scale + strokeX
+    const height = coreH * scale + strokeY
+    guideFor(pick.edge, pick.match)
+
+    return {
+      desired: {
+        left: edges.includes('left') ? R - width : L,
+        top: edges.includes('top') ? B - height : T,
+        width,
+        height,
+      },
+      guides,
+    }
+  }
+
+  // Rasio bebas: tiap sumbu di-snap sendiri-sendiri.
+  let left = L
+  let width = box.width
+  if (found.right) {
+    width = box.width + found.right.delta
+    guideFor('right', found.right)
+  } else if (found.left) {
+    left = L + found.left.delta
+    width = box.width - found.left.delta
+    guideFor('left', found.left)
+  }
+
+  let top = T
+  let height = box.height
+  if (found.bottom) {
+    height = box.height + found.bottom.delta
+    guideFor('bottom', found.bottom)
+  } else if (found.top) {
+    top = T + found.top.delta
+    height = box.height - found.top.delta
+    guideFor('top', found.top)
+  }
+
+  if (guides.length === 0) return empty
+  return { desired: { left, top, width, height }, guides }
+}
+
+/**
+ * Menerapkan kotak batas tujuan hasil `computeResizeSnap` ke sebuah objek.
+ *
+ * Posisi diperbaiki lewat SELISIH kotak batas sebelum dan sesudah penskalaan,
+ * bukan dengan menghitung `left`/`top` secara langsung. Dengan begitu rumusnya
+ * tetap benar untuk objek apa pun tanpa perlu tahu `originX`/`originY`-nya —
+ * ActiveSelection, misalnya, memakai titik asal di tengah.
+ */
+export function applyResizeSnap(target, desired, action) {
+  if (!target || !desired) return false
+
+  const box = target.getBoundingRect()
+  const coreW = (target.width || 0) * (target.scaleX || 1)
+  const coreH = (target.height || 0) * (target.scaleY || 1)
+  const newCoreW = Math.max(1, desired.width - (box.width - coreW))
+  const newCoreH = Math.max(1, desired.height - (box.height - coreH))
+
+  if (action === 'resizing') {
+    // Handle kiri/kanan Textbox mengubah `width`, bukan `scaleX`.
+    if (target.scaleX) target.set({ width: newCoreW / target.scaleX })
+  } else if (target.width) {
+    target.set({ scaleX: newCoreW / target.width })
+  }
+  if (target.height) target.set({ scaleY: newCoreH / target.height })
+
+  target.setCoords()
+  const after = target.getBoundingRect()
+  target.set({
+    left: (target.left || 0) + (desired.left - after.left),
+    top: (target.top || 0) + (desired.top - after.top),
+  })
+  target.setCoords()
+  return true
+}
+
 /**
  * Menggambar garis bantu di kanvas atas.
  * Digambar dalam koordinat layar supaya ketebalannya tetap 1px pada zoom berapa pun.
