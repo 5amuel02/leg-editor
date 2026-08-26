@@ -3,6 +3,7 @@ import { RectangleHorizontal, RectangleVertical, Square } from 'lucide-react'
 import Modal from '../ui/Modal'
 import Button from '../ui/Button'
 import { CANVAS_PRESETS } from '../../lib/constants'
+import { TEMPLATES } from '../../lib/templates'
 
 const ICONS = {
   square: Square,
@@ -24,6 +25,7 @@ export default function SizePickerModal({ open, onClose, onConfirm, initialPrese
   const [presetId, setPresetId] = useState(initialPresetId || 'ig-post')
   const [name, setName] = useState('')
   const [custom, setCustom] = useState({ width: 1080, height: 1080 })
+  const [templateId, setTemplateId] = useState(TEMPLATES[0].id)
 
   // Reset form setiap kali modal dibuka supaya tidak membawa state lama.
   useEffect(() => {
@@ -32,12 +34,18 @@ export default function SizePickerModal({ open, onClose, onConfirm, initialPrese
     setPresetId(initialPresetId || 'ig-post')
     setName('')
     setCustom({ width: 1080, height: 1080 })
+    setTemplateId(TEMPLATES[0].id)
   }, [open, initialPresetId])
 
-  const preset = CANVAS_PRESETS.find((p) => p.id === presetId) || CANVAS_PRESETS[0]
+  const template = TEMPLATES.find((t) => t.id === templateId) || TEMPLATES[0]
 
-  const width = mode === 'preset' ? preset.width : Number(custom.width)
-  const height = mode === 'preset' ? preset.height : Number(custom.height)
+  // Template membawa ukuran bawaannya sendiri supaya tata letaknya proporsional.
+  const effectivePresetId = mode === 'template' ? template.presetId : presetId
+  const preset =
+    CANVAS_PRESETS.find((p) => p.id === effectivePresetId) || CANVAS_PRESETS[0]
+
+  const width = mode === 'custom' ? Number(custom.width) : preset.width
+  const height = mode === 'custom' ? Number(custom.height) : preset.height
 
   const valid =
     Number.isFinite(width) &&
@@ -52,9 +60,10 @@ export default function SizePickerModal({ open, onClose, onConfirm, initialPrese
     onConfirm({
       width,
       height,
-      presetId: mode === 'preset' ? preset.id : 'custom',
-      label: mode === 'preset' ? preset.label : `Custom ${width}×${height}`,
-      name: name.trim() || undefined,
+      presetId: mode === 'custom' ? 'custom' : preset.id,
+      label: mode === 'custom' ? `Custom ${width}×${height}` : preset.label,
+      name: name.trim() || (mode === 'template' ? template.label : undefined),
+      templateId: mode === 'template' ? template.id : undefined,
     })
   }
 
@@ -80,6 +89,7 @@ export default function SizePickerModal({ open, onClose, onConfirm, initialPrese
       <div className="mb-4 inline-flex rounded-xl bg-ink-100 p-1">
         {[
           { id: 'preset', label: 'Preset' },
+          { id: 'template', label: 'Template' },
           { id: 'custom', label: 'Ukuran Custom' },
         ].map((t) => (
           <button
@@ -95,7 +105,7 @@ export default function SizePickerModal({ open, onClose, onConfirm, initialPrese
         ))}
       </div>
 
-      {mode === 'preset' ? (
+      {mode === 'preset' && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {CANVAS_PRESETS.map((p) => {
             const Icon = ICONS[p.icon] || Square
@@ -120,7 +130,37 @@ export default function SizePickerModal({ open, onClose, onConfirm, initialPrese
             )
           })}
         </div>
-      ) : (
+      )}
+
+      {mode === 'template' && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {TEMPLATES.map((t) => {
+            const selected = t.id === templateId
+            const tPreset = CANVAS_PRESETS.find((p) => p.id === t.presetId)
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTemplateId(t.id)}
+                className={`flex gap-3 rounded-xl border p-3 text-left transition ${
+                  selected
+                    ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-200'
+                    : 'border-ink-200 hover:border-ink-300 hover:bg-ink-50'
+                }`}
+              >
+                <TemplateThumb template={t} />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-ink-800">{t.label}</p>
+                  <p className="mt-0.5 text-xs leading-snug text-ink-500">{t.description}</p>
+                  <p className="mt-1 text-[11px] text-ink-400">{tPreset?.sub}</p>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {mode === 'custom' && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             {['width', 'height'].map((key) => (
@@ -162,7 +202,52 @@ export default function SizePickerModal({ open, onClose, onConfirm, initialPrese
         <span className="font-semibold text-ink-700">
           {valid ? `${width} × ${height} px` : 'tidak valid'}
         </span>
+        {mode === 'template' && (
+          <>
+            {' · template '}
+            <span className="font-semibold text-ink-700">{template.label}</span>
+          </>
+        )}
       </div>
     </Modal>
+  )
+}
+
+/**
+ * Pratinjau template.
+ *
+ * Digambar ulang memakai div berposisi absolut dari deskriptor yang sama
+ * dengan yang dipakai untuk membangun halaman sungguhan — jadi tidak ada
+ * berkas gambar pratinjau yang harus ikut dibundel dan tidak ada risiko
+ * pratinjau melenceng dari hasil aslinya.
+ */
+function TemplateThumb({ template }) {
+  const preset = CANVAS_PRESETS.find((p) => p.id === template.presetId)
+  const ratio = preset ? preset.width / preset.height : 1
+
+  return (
+    <div
+      aria-hidden
+      className="relative h-16 shrink-0 overflow-hidden rounded-md border border-ink-200"
+      style={{ width: `${64 * ratio}px`, background: template.background }}
+    >
+      {template.elements.map((el, i) => (
+        <div
+          key={i}
+          className="absolute"
+          style={{
+            left: `${el.x * 100}%`,
+            top: `${el.y * 100}%`,
+            width: `${el.w * 100}%`,
+            // Teks diwakili batang tipis: pada ukuran sekecil ini huruf
+            // aslinya tidak akan terbaca, tapi ritme tata letaknya terbaca.
+            height: el.kind === 'rect' ? `${el.h * 100}%` : `${Math.max(2, el.size * 90)}%`,
+            background: el.fill,
+            borderRadius: el.kind === 'rect' && el.rx ? '2px' : '1px',
+            opacity: el.kind === 'rect' ? 1 : 0.85,
+          }}
+        />
+      ))}
+    </div>
   )
 }

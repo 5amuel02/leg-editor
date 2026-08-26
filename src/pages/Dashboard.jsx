@@ -7,6 +7,7 @@ import ProjectCard from '../components/dashboard/ProjectCard'
 import SizePickerModal from '../components/dashboard/SizePickerModal'
 import { CANVAS_PRESETS, DESIGN_SHORTCUTS } from '../lib/constants'
 import { createProject, normalizeImportedProject, uid } from '../lib/project'
+import { buildTemplatePage, findTemplate } from '../lib/templates'
 import { deleteProject, listProjects, saveProject } from '../lib/db'
 import { readProjectFile } from '../lib/exporters'
 
@@ -58,6 +59,19 @@ export default function Dashboard({ onOpenProject }) {
   /** Membuat project baru lalu langsung membuka editor. */
   const handleCreate = async (config) => {
     const project = createProject(config)
+
+    // Template mengganti halaman kosong bawaan dengan halaman berisi.
+    const template = config.templateId ? findTemplate(config.templateId) : null
+    if (template) {
+      try {
+        project.pages = [buildTemplatePage(template, project.size)]
+      } catch {
+        // Template gagal dirakit bukan alasan untuk membatalkan project —
+        // pengguna tetap mendapat kanvas kosong yang bisa dipakai.
+        toast.error('Template gagal dimuat, project dibuat kosong.')
+      }
+    }
+
     await saveProject(project)
     setSizePicker({ open: false, presetId: null })
     onOpenProject(project.id)
