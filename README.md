@@ -172,10 +172,34 @@ efek punya pemilih warna aksen dan slider intensitas, dan ukurannya menyesuaikan
 
 Saat elemen digeser, garis bantu pink 1px muncul otomatis ketika elemen sejajar
 dengan tepi kanvas, tengah kanvas, atau tepi/tengah elemen lain — lengkap dengan
-snap magnetis dalam radius 7px layar. Rotasi ikut snap ke kelipatan 45°
-(0°/45°/90°/…). Tahan **Ctrl/Cmd** saat menggeser atau memutar untuk mematikan
-snap sementara, atau matikan sepenuhnya lewat tombol magnet di toolbar atas.
-Garis bantu hilang sendiri begitu elemen dilepas.
+snap magnetis dalam radius 7px layar.
+
+**Snapping juga bekerja saat elemen diresize**, dari handle sisi maupun sudut.
+Tepi yang sedang ditarik menempel ke acuan yang sama, sementara tepi seberangnya
+dijaga tetap di tempatnya. Saat rasio aspek terkunci (drag sudut), hanya tepi
+terdekat yang menentukan faktor skala lalu diterapkan ke kedua sumbu, sehingga
+rasionya tidak rusak. Elemen yang sudah diputar dilewati — pada objek berotasi,
+skala bekerja di sumbu lokal elemen sehingga tidak lagi bersesuaian dengan tepi
+kotak batas yang sejajar layar.
+
+Rotasi ikut snap ke kelipatan 45° (0°/45°/90°/…). Tahan **Ctrl/Cmd** saat
+menggeser, meresize, atau memutar untuk mematikan snap sementara, atau matikan
+sepenuhnya lewat tombol magnet di toolbar atas. Garis bantu hilang sendiri
+begitu elemen dilepas.
+
+### Indikator ukuran & posisi
+
+Badge angka muncul di dekat elemen selama interaksi berlangsung, sehingga ukuran
+dan posisi bisa diatur presisi tanpa menebak:
+
+| Sedang | Ditampilkan |
+| --- | --- |
+| Menggeser | `X 300   Y 346` — posisi sudut kiri-atas |
+| Meresize | `557 × 302` — lebar × tinggi saat itu juga |
+| Memutar | `45°` — sudut saat itu juga |
+
+Badge diletakkan di bawah elemen, atau di atasnya bila ruang di bawah sudah
+habis, dan hilang bersama garis bantu begitu tombol mouse dilepas.
 
 ### Multi-halaman
 
@@ -235,7 +259,8 @@ src/
     bubbles.js       path & factory balon chat
     frames.js        katalog bingkai, clipPath, dan pengisian gambar
     textEffects.js   preset efek teks
-    snapping.js      perhitungan & penggambaran smart guides
+    snapping.js      smart guides: snap saat geser, resize, dan rotasi
+    measurement.js   badge angka ukuran/posisi selama interaksi
     shadow.js        bayangan elemen non-teks
     gradient.js      isian gradien linear
     imageFilters.js  penyesuaian gambar (brightness, kontras, dst)
