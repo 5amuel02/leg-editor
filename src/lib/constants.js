@@ -160,6 +160,17 @@ export const SWATCHES = [
   '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#78350f', '#1e293b',
 ]
 
+/**
+ * Palet cepat khusus tool menggambar (Pena/Stabilo/Spidol).
+ * Dipilih manual — bukan hasil filter dari SWATCHES — supaya warna penting
+ * seperti putih (untuk menulis di atas latar gelap) selalu ikut tampil.
+ */
+export const BRUSH_SWATCHES = [
+  '#ffffff', '#000000', '#64748b', '#ef4444', '#f97316', '#f59e0b',
+  '#facc15', '#22c55e', '#10b981', '#06b6d4', '#3b82f6', '#6366f1',
+  '#8b5cf6', '#d946ef', '#ec4899', '#78350f',
+]
+
 /** Style garis untuk stroke (dashArray). */
 export const STROKE_STYLES = [
   { id: 'solid', label: 'Solid', dash: null },
@@ -175,14 +186,6 @@ export const CROP_RATIOS = [
   { id: '3-4', label: '3:4', value: 3 / 4 },
   { id: '16-9', label: '16:9', value: 16 / 9 },
   { id: '9-16', label: '9:16', value: 9 / 16 },
-]
-
-/** Bentuk mask (crop ke bentuk) untuk gambar. */
-export const CROP_SHAPES = [
-  { id: 'none', label: 'Tanpa Mask' },
-  { id: 'circle', label: 'Lingkaran' },
-  { id: 'rounded', label: 'Sudut Bulat' },
-  { id: 'triangle', label: 'Segitiga' },
 ]
 
 /** Level zoom preset pada toolbar atas. */

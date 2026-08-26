@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import * as fabric from 'fabric'
 import {
   AlignCenter,
   AlignEndHorizontal,
@@ -21,7 +20,14 @@ import {
 } from 'lucide-react'
 import { useEditor } from '../../context/EditorContext'
 import { getLegType, readTableStyle } from '../../lib/fabricUtils'
-import { CROP_SHAPES, FONT_FAMILIES, STROKE_STYLES } from '../../lib/constants'
+import { FONT_FAMILIES, STROKE_STYLES } from '../../lib/constants'
+import { MASK_SHAPES, createClipShape } from '../../lib/frames'
+import {
+  DEFAULT_EFFECT_COLOR,
+  DEFAULT_EFFECT_STRENGTH,
+  TEXT_EFFECTS,
+  applyTextEffect,
+} from '../../lib/textEffects'
 import ColorPicker from '../ui/ColorPicker'
 import IconButton from '../ui/IconButton'
 import Button from '../ui/Button'
@@ -66,6 +72,14 @@ export default function PropertiesPanel({ onRequestCrop }) {
     pages,
     canvasRef,
   } = useEditor()
+
+  /** Menerapkan preset efek teks lalu mencatatnya ke riwayat undo. */
+  const applyEffect = (effectId, options) => {
+    const active = canvasRef.current?.getActiveObject()
+    if (!active) return
+    applyTextEffect(active, effectId, options)
+    updateSelected({}, { record: true })
+  }
 
   const [open, setOpen] = useState(true)
 
@@ -144,10 +158,19 @@ export default function PropertiesPanel({ onRequestCrop }) {
         )}
 
         {/* ---------------- Properti khusus jenis elemen ---------------- */}
-        {target && type === 'text' && <TextProperties target={target} update={updateSelected} />}
+        {target && type === 'text' && (
+          <TextProperties target={target} update={updateSelected} applyEffect={applyEffect} />
+        )}
 
-        {target && type === 'shape' && (
+        {target && (type === 'shape' || type === 'bubble' || type === 'frame') && (
           <FillStrokeProperties target={target} update={updateSelected} withFill />
+        )}
+
+        {target && type === 'frame' && (
+          <p className="rounded-lg bg-ink-50 px-3 py-2 text-[11px] leading-relaxed text-ink-500">
+            Bingkai masih kosong. Pilih gambar di tab Unggahan — atau seret gambar ke atas
+            bingkai ini — untuk mengisinya.
+          </p>
         )}
 
         {target && type === 'table' && <TableProperties target={target} update={updateSelected} />}
@@ -235,13 +258,14 @@ function PageProperties({ page, index, total, size, updatePage, setPageBackgroun
   )
 }
 
-function TextProperties({ target, update }) {
+function TextProperties({ target, update, applyEffect }) {
   const isBold = target.fontWeight === 'bold' || Number(target.fontWeight) >= 600
   return (
     <div className="space-y-3">
       <SectionTitle>Teks</SectionTitle>
 
       <Select
+        fontPreview
         className="w-full"
         value={target.fontFamily || FONT_FAMILIES[0]}
         onChange={(v) => update({ fontFamily: v })}
@@ -335,6 +359,77 @@ function TextProperties({ target, update }) {
           onChange={(v) => update({ charSpacing: v })}
         />
       </div>
+
+      <TextEffectsSection target={target} applyEffect={applyEffect} />
+    </div>
+  )
+}
+
+/**
+ * Galeri efek teks. Setiap kartu memakai gaya CSS pendekatan agar
+ * pratinjaunya mirip hasil di kanvas tanpa perlu merender ulang Fabric.
+ */
+function TextEffectsSection({ target, applyEffect }) {
+  const active = target.legTextEffect || 'none'
+  const accent = target.legEffectColor || DEFAULT_EFFECT_COLOR
+  const strength = target.legEffectStrength ?? DEFAULT_EFFECT_STRENGTH
+
+  return (
+    <div className="space-y-3 border-t border-ink-100 pt-4">
+      <SectionTitle>Efek teks</SectionTitle>
+
+      <div className="grid grid-cols-3 gap-1.5">
+        {TEXT_EFFECTS.map((effect) => (
+          <button
+            key={effect.id}
+            type="button"
+            title={effect.label}
+            onClick={() => applyEffect(effect.id, { color: accent, strength })}
+            className={`flex flex-col items-center gap-1 rounded-lg border px-1 py-1.5 transition ${
+              active === effect.id
+                ? 'border-brand-500 bg-brand-50'
+                : 'border-ink-200 hover:border-brand-300 hover:bg-ink-50'
+            }`}
+          >
+            <span className="flex h-7 items-center justify-center">
+              <span
+                className="text-base font-bold leading-none text-ink-800"
+                style={effect.preview(accent)}
+              >
+                Ag
+              </span>
+            </span>
+            <span className="w-full truncate text-center text-[9px] leading-tight text-ink-500">
+              {effect.label}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {active !== 'none' && (
+        <>
+          <FieldRow label="Warna efek">
+            <ColorPicker
+              size="sm"
+              align="right"
+              label="Warna efek"
+              value={accent}
+              onChange={(c) => applyEffect(active, { color: c, strength })}
+            />
+          </FieldRow>
+
+          <div>
+            <p className="mb-1 text-xs font-medium text-ink-500">Intensitas</p>
+            <SliderInput
+              min={0}
+              max={100}
+              step={5}
+              value={strength}
+              onChange={(v) => applyEffect(active, { color: accent, strength: v })}
+            />
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -510,36 +605,20 @@ function TableProperties({ target, update }) {
 }
 
 function ImageProperties({ target, update, onRequestCrop }) {
-  /** Menerapkan mask bentuk memakai clipPath relatif terhadap gambar. */
+  /**
+   * Menerapkan mask bentuk memakai clipPath relatif terhadap gambar.
+   * Bentuknya diambil dari katalog bingkai supaya pilihannya konsisten
+   * dengan bingkai di tab Elemen.
+   */
   const applyMask = (shapeId) => {
-    const w = target.width
-    const h = target.height
-    let clip = null
-
-    if (shapeId === 'circle') {
-      clip = new fabric.Circle({
-        radius: Math.min(w, h) / 2,
-        originX: 'center',
-        originY: 'center',
-      })
-    } else if (shapeId === 'rounded') {
-      clip = new fabric.Rect({
-        width: w,
-        height: h,
-        rx: Math.min(w, h) * 0.12,
-        ry: Math.min(w, h) * 0.12,
-        originX: 'center',
-        originY: 'center',
-      })
-    } else if (shapeId === 'triangle') {
-      clip = new fabric.Triangle({
-        width: w,
-        height: h,
-        originX: 'center',
-        originY: 'center',
-      })
+    if (shapeId === 'none') {
+      update({ clipPath: null, legFrameId: null })
+      return
     }
-    update({ clipPath: clip })
+    update({
+      clipPath: createClipShape(shapeId, target.width, target.height),
+      legFrameId: shapeId,
+    })
   }
 
   return (
@@ -552,15 +631,19 @@ function ImageProperties({ target, update, onRequestCrop }) {
 
       <div>
         <p className="mb-1.5 text-xs font-medium text-ink-500">Potong ke bentuk</p>
-        <div className="grid grid-cols-2 gap-1.5">
-          {CROP_SHAPES.map((s) => (
+        <div className="grid grid-cols-3 gap-1.5">
+          {MASK_SHAPES.map((shape) => (
             <button
-              key={s.id}
+              key={shape.id}
               type="button"
-              onClick={() => applyMask(s.id)}
-              className="rounded-lg border border-ink-200 px-2 py-1.5 text-[11px] text-ink-600 transition hover:border-brand-400 hover:bg-brand-50"
+              onClick={() => applyMask(shape.id)}
+              className={`rounded-lg border px-1.5 py-1.5 text-[10px] leading-tight transition ${
+                (target.legFrameId || 'none') === shape.id
+                  ? 'border-brand-500 bg-brand-50 text-brand-700'
+                  : 'border-ink-200 text-ink-600 hover:border-brand-400 hover:bg-brand-50'
+              }`}
             >
-              {s.label}
+              {shape.label}
             </button>
           ))}
         </div>
