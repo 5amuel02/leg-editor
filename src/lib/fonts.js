@@ -32,7 +32,9 @@ export function notifyFontsChanged() {
  * dalam nilai CSS `font-family` dan akan merusak render bila diloloskan.
  */
 export function familyFromFilename(filename) {
-  const base = String(filename || 'Font')
+  // Bukan `filename || 'Font'`: nilai pengganti di sini akan melewati jalur
+  // cadangan di bawah dan menghasilkan nama berbeda untuk nama berkas kosong.
+  const base = String(filename ?? '')
     .replace(/\.[^.]+$/, '')
     .replace(/[_-]+/g, ' ')
     .replace(/["',]/g, '')
