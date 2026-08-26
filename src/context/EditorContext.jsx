@@ -771,6 +771,49 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
     [pushHistory, scheduleAutosave],
   )
 
+  /**
+   * Meratakan jarak antar objek terpilih (butuh minimal 3 objek).
+   * Objek terluar dibiarkan di tempatnya, sisanya disebar merata di antaranya
+   * berdasarkan celah — bukan berdasarkan titik tengah — supaya elemen dengan
+   * lebar berbeda tetap terlihat berjarak sama.
+   */
+  const distributeSelected = useCallback(
+    (axis) => {
+      const canvas = canvasRef.current
+      if (!canvas) return
+      const targets = canvas.getActiveObjects()
+      if (targets.length < 3) return
+
+      const isX = axis === 'x'
+      const items = targets
+        .map((obj) => ({
+          obj,
+          pos: (isX ? obj.left : obj.top) || 0,
+          size: isX ? obj.getScaledWidth() : obj.getScaledHeight(),
+        }))
+        .sort((a, b) => a.pos - b.pos)
+
+      const first = items[0]
+      const last = items[items.length - 1]
+      const span = last.pos + last.size - first.pos
+      const totalSize = items.reduce((sum, it) => sum + it.size, 0)
+      const gap = (span - totalSize) / (items.length - 1)
+
+      let cursor = first.pos
+      items.forEach((it) => {
+        it.obj.set(isX ? { left: cursor } : { top: cursor })
+        it.obj.setCoords()
+        cursor += it.size + gap
+      })
+
+      canvas.requestRenderAll()
+      setPropsVersion((v) => v + 1)
+      pushHistory()
+      scheduleAutosave()
+    },
+    [pushHistory, scheduleAutosave],
+  )
+
   /** Balik objek terpilih secara horizontal / vertikal. */
   const flipSelected = useCallback(
     (axis) => {
@@ -1017,6 +1060,7 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       pasteClipboard,
       orderSelected,
       alignSelected,
+      distributeSelected,
       flipSelected,
       toggleObjectLock,
       toggleObjectVisibility,
@@ -1075,6 +1119,7 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       pasteClipboard,
       orderSelected,
       alignSelected,
+      distributeSelected,
       flipSelected,
       toggleObjectLock,
       toggleObjectVisibility,

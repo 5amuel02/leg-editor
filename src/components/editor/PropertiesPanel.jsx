@@ -2,17 +2,20 @@ import { useEffect, useState } from 'react'
 import {
   AlignCenter,
   AlignEndHorizontal,
+  AlignHorizontalDistributeCenter,
   AlignHorizontalJustifyCenter,
   AlignJustify,
   AlignLeft,
   AlignRight,
   AlignStartHorizontal,
+  AlignVerticalDistributeCenter,
   AlignVerticalJustifyCenter,
   Bold,
   Copy,
   Crop,
   Italic,
   Lock,
+  RotateCcw,
   Strikethrough,
   Trash2,
   Underline,
@@ -28,6 +31,15 @@ import {
   TEXT_EFFECTS,
   applyTextEffect,
 } from '../../lib/textEffects'
+import { DEFAULT_SHADOW, readShadow, shadowPatch, supportsShadow } from '../../lib/shadow'
+import {
+  ADJUSTMENTS,
+  TOGGLE_FILTERS,
+  applyAdjustments,
+  hasAdjustments,
+  neutralAdjustments,
+  readAdjustments,
+} from '../../lib/imageFilters'
 import ColorPicker from '../ui/ColorPicker'
 import IconButton from '../ui/IconButton'
 import Button from '../ui/Button'
@@ -42,6 +54,10 @@ const ALIGN_V = [
   { mode: 'top', icon: AlignStartHorizontal, label: 'Rata atas kanvas' },
   { mode: 'middle', icon: AlignVerticalJustifyCenter, label: 'Rata tengah vertikal' },
   { mode: 'bottom', icon: AlignEndHorizontal, label: 'Rata bawah kanvas' },
+]
+const DISTRIBUTE = [
+  { axis: 'x', icon: AlignHorizontalDistributeCenter, label: 'Ratakan jarak horizontal' },
+  { axis: 'y', icon: AlignVerticalDistributeCenter, label: 'Ratakan jarak vertikal' },
 ]
 const TEXT_ALIGN = [
   { value: 'left', icon: AlignLeft },
@@ -61,6 +77,7 @@ export default function PropertiesPanel({ onRequestCrop }) {
     propsVersion,
     updateSelected,
     alignSelected,
+    distributeSelected,
     deleteSelected,
     duplicateObject,
     toggleObjectLock,
@@ -154,6 +171,26 @@ export default function PropertiesPanel({ onRequestCrop }) {
                 ))}
               </div>
             </div>
+
+            {/* Ratakan jarak butuh minimal 3 elemen — dengan 2 elemen tidak ada
+                celah di tengah yang bisa disamakan. */}
+            {selection.length >= 3 && (
+              <div className="mt-2">
+                <p className="mb-1 text-xs font-medium text-ink-500">Ratakan jarak</p>
+                <div className="inline-flex rounded-lg bg-ink-100 p-0.5">
+                  {DISTRIBUTE.map(({ axis, icon: Icon, label }) => (
+                    <IconButton
+                      key={axis}
+                      size="sm"
+                      label={label}
+                      onClick={() => distributeSelected(axis)}
+                    >
+                      <Icon size={15} />
+                    </IconButton>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -183,6 +220,11 @@ export default function PropertiesPanel({ onRequestCrop }) {
 
         {target && type === 'image' && (
           <ImageProperties target={target} update={updateSelected} onRequestCrop={onRequestCrop} />
+        )}
+
+        {/* ---------------- Bayangan ---------------- */}
+        {target && supportsShadow(type) && (
+          <ShadowProperties target={target} update={updateSelected} />
         )}
 
         {/* ---------------- Transform ---------------- */}
@@ -518,6 +560,89 @@ function FillStrokeProperties({ target, update, withFill }) {
   )
 }
 
+/**
+ * Bayangan untuk elemen non-teks.
+ *
+ * Nilainya dibaca langsung dari objek (bukan disimpan di state lokal) supaya
+ * panel selalu menampilkan kondisi sebenarnya — termasuk setelah undo/redo
+ * atau saat project dibuka ulang.
+ */
+function ShadowProperties({ target, update }) {
+  const value = readShadow(target)
+  const patch = (next) => update(shadowPatch({ ...value, ...next, enabled: true }))
+
+  return (
+    <div className="space-y-3">
+      <SectionTitle
+        right={
+          <label className="flex cursor-pointer items-center gap-1.5 text-[11px] font-medium text-ink-500">
+            <input
+              type="checkbox"
+              checked={value.enabled}
+              onChange={(e) =>
+                update(
+                  e.target.checked
+                    ? shadowPatch({ ...DEFAULT_SHADOW, enabled: true })
+                    : shadowPatch({ enabled: false }),
+                )
+              }
+              className="h-3.5 w-3.5 accent-brand-500"
+            />
+            Aktif
+          </label>
+        }
+      >
+        Bayangan
+      </SectionTitle>
+
+      {value.enabled && (
+        <>
+          <FieldRow label="Warna">
+            <ColorPicker
+              size="sm"
+              align="right"
+              label="Warna bayangan"
+              value={value.color}
+              onChange={(c) => patch({ color: c })}
+            />
+          </FieldRow>
+
+          <div>
+            <p className="mb-1 text-xs font-medium text-ink-500">Kepekatan</p>
+            <SliderInput
+              min={0}
+              max={1}
+              step={0.01}
+              value={value.opacity}
+              onChange={(v) => patch({ opacity: v })}
+            />
+          </div>
+
+          <div>
+            <p className="mb-1 text-xs font-medium text-ink-500">Blur</p>
+            <SliderInput
+              min={0}
+              max={80}
+              step={1}
+              value={value.blur}
+              onChange={(v) => patch({ blur: v })}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <FieldRow label="Geser X">
+              <NumberInput value={value.offsetX} onChange={(v) => patch({ offsetX: v })} />
+            </FieldRow>
+            <FieldRow label="Geser Y">
+              <NumberInput value={value.offsetY} onChange={(v) => patch({ offsetY: v })} />
+            </FieldRow>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 function TableProperties({ target, update }) {
   const style = readTableStyle(target)
   const dashId =
@@ -652,6 +777,8 @@ function ImageProperties({ target, update, onRequestCrop }) {
         </div>
       </div>
 
+      <ImageAdjustments key={target.id} target={target} update={update} />
+
       <div>
         <p className="mb-1 text-xs font-medium text-ink-500">Garis tepi</p>
         <div className="flex items-center gap-2">
@@ -671,6 +798,92 @@ function ImageProperties({ target, update, onRequestCrop }) {
             onChange={(v) => update({ strokeWidth: v, stroke: target.stroke || '#ffffff' })}
           />
         </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Slider penyesuaian gambar (kecerahan, kontras, saturasi, dst).
+ *
+ * Nilai disimpan di state lokal karena selama slider diseret kita sengaja
+ * TIDAK memanggil `update` — kalau dipanggil, setiap piksel gerakan slider
+ * akan menjadi satu langkah undo tersendiri. Filter diterapkan langsung ke
+ * objek untuk pratinjau, lalu riwayat baru dicatat sekali saat slider dilepas.
+ */
+function ImageAdjustments({ target, update }) {
+  const [values, setValues] = useState(() => readAdjustments(target))
+
+  const preview = (next) => {
+    setValues(next)
+    applyAdjustments(target, next)
+    target.canvas?.requestRenderAll()
+  }
+
+  /** Dipanggil saat slider dilepas — satu langkah undo untuk satu penyesuaian. */
+  const commit = () => update({}, { record: true })
+
+  const reset = () => {
+    const next = neutralAdjustments()
+    setValues(next)
+    applyAdjustments(target, next)
+    update({}, { record: true })
+  }
+
+  return (
+    <div className="space-y-3">
+      <SectionTitle
+        right={
+          hasAdjustments(values) ? (
+            <button
+              type="button"
+              onClick={reset}
+              className="flex items-center gap-1 text-[11px] font-medium text-ink-400 hover:text-ink-600"
+            >
+              <RotateCcw size={12} /> Reset
+            </button>
+          ) : null
+        }
+      >
+        Penyesuaian
+      </SectionTitle>
+
+      <div className="grid grid-cols-3 gap-1.5">
+        {TOGGLE_FILTERS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => {
+              const next = { ...values, [t.id]: !values[t.id] }
+              setValues(next)
+              applyAdjustments(target, next)
+              update({}, { record: true })
+            }}
+            className={`rounded-lg border px-1.5 py-1.5 text-[10px] leading-tight transition ${
+              values[t.id]
+                ? 'border-brand-500 bg-brand-50 text-brand-700'
+                : 'border-ink-200 text-ink-600 hover:border-brand-400 hover:bg-brand-50'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* onPointerUp di pembungkus: satu catatan riwayat per tarikan slider. */}
+      <div className="space-y-2" onPointerUp={commit}>
+        {ADJUSTMENTS.map((a) => (
+          <div key={a.id}>
+            <p className="mb-1 text-xs font-medium text-ink-500">{a.label}</p>
+            <SliderInput
+              min={a.min}
+              max={a.max}
+              step={a.step}
+              value={values[a.id]}
+              onChange={(v) => preview({ ...values, [a.id]: v })}
+            />
+          </div>
+        ))}
       </div>
     </div>
   )
