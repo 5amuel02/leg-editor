@@ -1,5 +1,5 @@
 /**
- * Service worker LEG Editor.
+ * Service worker Legza.
  *
  * Aplikasi ini memang sudah bekerja tanpa internet setelah dimuat, tapi
  * BERKAS aplikasinya tetap harus diambil dari server setiap kali dibuka.
@@ -11,7 +11,7 @@
  * `public/` sehingga isinya persis seperti yang dibaca di sini.
  */
 
-const CACHE = 'leg-editor-v1'
+const CACHE = 'legza-v1'
 
 /**
  * Kerangka minimum yang harus tersedia offline. Berkas hasil build tidak

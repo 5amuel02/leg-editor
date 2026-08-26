@@ -119,7 +119,7 @@ export async function exportProjectPDF(project, { multiplier = 2, onProgress } =
 export function downloadProjectJSON(project) {
   const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
-  downloadURL(url, `${safeFileName(project.name)}.leg.json`)
+  downloadURL(url, `${safeFileName(project.name)}.legza.json`)
   setTimeout(() => URL.revokeObjectURL(url), 2000)
 }
 

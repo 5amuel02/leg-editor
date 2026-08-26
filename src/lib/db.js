@@ -9,6 +9,12 @@
  * Tidak ada request jaringan sama sekali di file ini — semuanya lokal.
  */
 
+/*
+ * Nama produk adalah "Legza", tapi kunci penyimpanan di bawah sengaja tetap
+ * memakai awalan `leg-editor`. Kunci ini adalah ALAMAT DATA, bukan merek:
+ * menggantinya berarti seluruh project, gambar unggahan, dan font milik
+ * pengguna lama tidak lagi bisa ditemukan browser — data hilang tanpa jejak.
+ */
 const DB_NAME = 'leg-editor'
 const DB_VERSION = 1
 export const STORE_PROJECTS = 'projects'
@@ -64,7 +70,7 @@ function openDB() {
       dbPromise = null
       reject(
         new Error(
-          'Penyimpanan sedang dipakai tab lain. Tutup tab LEG Editor yang lain lalu muat ulang halaman ini.',
+          'Penyimpanan sedang dipakai tab lain. Tutup tab Legza yang lain lalu muat ulang halaman ini.',
         ),
       )
     }

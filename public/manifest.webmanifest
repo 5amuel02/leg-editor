@@ -1,7 +1,7 @@
 {
-  "name": "LEG Editor — Editor Desain Grafis Lokal",
-  "short_name": "LEG Editor",
-  "description": "Editor desain grafis yang berjalan sepenuhnya di browser komputer sendiri, tanpa server dan tanpa internet.",
+  "name": "Legza — Editor Desain Grafis Lokal",
+  "short_name": "Legza",
+  "description": "Legza — editor desain grafis yang berjalan sepenuhnya di browser komputer sendiri, tanpa server dan tanpa internet.",
   "lang": "id",
   "start_url": "/",
   "scope": "/",

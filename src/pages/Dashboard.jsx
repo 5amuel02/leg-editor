@@ -133,7 +133,7 @@ export default function Dashboard({ onOpenProject }) {
               <Sparkles size={18} />
             </div>
             <div className="leading-tight">
-              <p className="text-sm font-bold text-ink-900">LEG Editor</p>
+              <p className="text-sm font-bold text-ink-900">Legza</p>
               <p className="text-[11px] text-ink-400">Editor desain lokal</p>
             </div>
           </div>

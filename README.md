@@ -1,4 +1,4 @@
-# LEG Editor
+# Legza
 
 Editor desain grafis sederhana yang berjalan **sepenuhnya di browser komputer sendiri**.
 Tidak ada backend, tidak ada database online, tidak ada request jaringan sama sekali —
@@ -90,6 +90,12 @@ halnya menarik Google Fonts.
 Setelah dimuat, font langsung muncul di dropdown font panel properti dengan
 label "(kustom)". Font tersimpan di database terpisah (`leg-editor-fonts`)
 supaya penambahannya tidak pernah menyentuh database project.
+
+> **Catatan penamaan.** Nama produk adalah **Legza**, tapi kunci penyimpanan
+> di browser (`leg-editor`, `leg-editor-fonts`, awalan localStorage
+> `leg-editor:`) sengaja **tidak** ikut diganti. Kunci itu adalah alamat data,
+> bukan merek: menggantinya akan membuat seluruh project, gambar unggahan, dan
+> font milik pengguna lama tidak lagi bisa ditemukan.
 
 ### Grup
 
