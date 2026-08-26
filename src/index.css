@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------
+   Design tokens LEG Editor.
+   Tailwind v4 membaca @theme untuk membuat utility class kustom
+   (mis. bg-brand-500, text-ink-400) tanpa file tailwind.config.js.
+---------------------------------------------------------------- */
+@theme {
+  --color-brand-50: #f5f3ff;
+  --color-brand-100: #ede9fe;
+  --color-brand-200: #ddd6fe;
+  --color-brand-300: #c4b5fd;
+  --color-brand-400: #a78bfa;
+  --color-brand-500: #8b5cf6;
+  --color-brand-600: #7c3aed;
+  --color-brand-700: #6d28d9;
+
+  --color-ink-50: #f8fafc;
+  --color-ink-100: #f1f5f9;
+  --color-ink-200: #e2e8f0;
+  --color-ink-300: #cbd5e1;
+  --color-ink-400: #94a3b8;
+  --color-ink-500: #64748b;
+  --color-ink-600: #475569;
+  --color-ink-700: #334155;
+  --color-ink-800: #1e293b;
+  --color-ink-900: #0f172a;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--color-ink-100);
+  color: var(--color-ink-800);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar tipis supaya panel samping tidak berisik */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ink-300) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-ink-300);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Area kerja kanvas: pola kotak-kotak halus seperti aplikasi desain */
+.leg-workspace {
+  background-color: #eef1f6;
+  background-image:
+    linear-gradient(45deg, #e4e8ef 25%, transparent 25%),
+    linear-gradient(-45deg, #e4e8ef 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e4e8ef 75%),
+    linear-gradient(-45deg, transparent 75%, #e4e8ef 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+/* Animasi kecil untuk toast & popover */
+@keyframes leg-pop {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.leg-pop {
+  animation: leg-pop 0.12s ease-out;
+}
+
+/* Kanvas Fabric mendapat shadow "kertas" */
+.canvas-container {
+  box-shadow: 0 10px 30px -12px rgb(15 23 42 / 0.35), 0 0 0 1px rgb(15 23 42 / 0.06);
+  border-radius: 2px;
+}
+
+input[type="range"] {
+  accent-color: var(--color-brand-600);
+}
+input[type="color"] {
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
