@@ -46,10 +46,10 @@ npm run lint      # oxlint
 
 | Tab | Isi |
 | --- | --- |
-| **Elemen** | Kotak, kotak sudut bulat, lingkaran, elips, segitiga, belah ketupat, bintang, segi enam, garis, dan panah. Warna elemen baru bisa dipilih lebih dulu. |
+| **Elemen** | Bentuk dasar (kotak, kotak sudut bulat, lingkaran, elips, segitiga, belah ketupat, bintang, segi enam, garis, panah), 9 varian balon chat, dan 30 bingkai gambar dalam kategori Bentuk Dasar / Perangkat / Kertas. |
 | **Teks** | Tombol kotak teks polos + preset judul (besar-bold), subjudul (medium), dan teks isi (kecil). |
 | **Unggahan** | Grid semua gambar yang pernah diunggah (tersimpan lokal), tombol unggah baru, klik atau seret ke kanvas. |
-| **Alat** | Tiga jenis brush (pena, stabilo transparan, spidol tebal) dengan warna & ketebalan custom, penghapus coretan, dan pembuat tabel baris × kolom. |
+| **Alat** | Tiga jenis brush (pena, stabilo transparan, spidol tebal) dengan warna & ketebalan custom — palet cepatnya memuat putih untuk menggambar di atas latar gelap — penghapus coretan, dan pembuat tabel baris × kolom. |
 | **Layer** | Daftar semua elemen halaman aktif: reorder, sembunyi/tampil, kunci/buka, duplikat, hapus. |
 
 ### Toolbar kontekstual (muncul di atas elemen terpilih)
@@ -62,11 +62,55 @@ bawa ke depan / kirim ke belakang), **Format Painter**, duplikat, dan hapus.
 ### Panel properti (kanan)
 
 - Tanpa seleksi: nama halaman dan warna latar halaman.
-- Teks: font, ukuran, warna, bold/italic/underline/coret, perataan, jarak baris & huruf.
+- Teks: font (dengan pratinjau tipografi di dropdown), ukuran, warna,
+  bold/italic/underline/coret, perataan, jarak baris & huruf, plus 16 preset
+  **efek teks** lengkap dengan pemilih warna aksen dan slider intensitas.
 - Bentuk: warna isi, garis, ketebalan, jenis garis, sudut membulat.
 - Tabel: latar sel, warna & ketebalan garis, warna teks, ukuran teks.
-- Gambar: crop, potong ke bentuk (lingkaran / sudut bulat / segitiga), garis tepi.
+- Gambar: crop, potong ke 11 bentuk dari katalog bingkai, garis tepi.
+- Bingkai & balon chat: warna isi, garis, ketebalan, dan jenis garis.
 - Semua elemen: posisi X/Y, lebar/tinggi, rotasi, transparansi, rata elemen.
+
+### Balon chat
+
+Sembilan varian: kotak siku dan kotak bulat dengan ekor kiri/kanan, oval dengan
+ekor kiri/kanan, balon pikiran kiri/kanan, serta balon teriakan. Semuanya bisa
+diberi warna isi, garis tepi, dan ketebalan seperti bentuk biasa.
+
+### Bingkai gambar
+
+Tiga puluh bentuk bingkai dalam tiga kategori:
+
+| Kategori | Bentuk |
+| --- | --- |
+| **Bentuk Dasar** | persegi panjang, sudut bulat, persegi, lingkaran, oval, kapsul, lengkung, segitiga, belah ketupat, segi lima, segi enam, segi delapan, bintang, hati, blob |
+| **Perangkat** | ponsel (potret & mendatar), tablet, laptop, monitor, jam tangan, TV |
+| **Kertas** | A4 potret, A4 lanskap, kertas sobek, tiket, catatan tempel, pita, label, amplop |
+
+Bingkai kosong tampil sebagai siluet bergaris putus-putus. Untuk mengisinya:
+pilih bingkai lalu klik gambar di tab Unggahan, atau seret gambar tepat ke atas
+bingkai. Gambar otomatis dipotong "cover" mengikuti rasio bingkai lalu di-clip
+mengikuti bentuknya — cropnya non-destruktif sehingga bisa diubah lagi kapan saja.
+
+Bingkai berupa siluet utuh: pada bingkai perangkat, gambar mengisi seluruh
+siluet termasuk kaki atau talinya, bukan hanya area layar.
+
+### Efek teks
+
+Enam belas preset yang dirancang untuk judul besar: Tanpa Efek, Lepas,
+Bersinar, Echo, Kerangka, Latar Belakang, Splice, Berongga, Neon, Glitch,
+Bayangan Tebal, Outline Tebal, 3D Ekstrusi, Emboss, Stiker, dan Blok. Setiap
+efek punya pemilih warna aksen dan slider intensitas, dan ukurannya menyesuaikan
+`fontSize` sehingga proporsinya tetap sama pada judul kecil maupun besar.
+
+### Smart guides & snapping
+
+Saat elemen digeser, garis bantu pink 1px muncul otomatis ketika elemen sejajar
+dengan tepi kanvas, tengah kanvas, atau tepi/tengah elemen lain — lengkap dengan
+snap magnetis dalam radius 7px layar. Rotasi ikut snap ke kelipatan 45°
+(0°/45°/90°/…). Tahan **Ctrl/Cmd** saat menggeser atau memutar untuk mematikan
+snap sementara, atau matikan sepenuhnya lewat tombol magnet di toolbar atas.
+Garis bantu hilang sendiri begitu elemen dilepas.
 
 ### Multi-halaman
 
@@ -103,6 +147,7 @@ terpengaruh zoom/pan yang sedang aktif dan halaman non-aktif pun ikut terekspor.
 | `Ctrl+S` | Simpan project ke browser |
 | `Ctrl` + `+` / `-` / `0` | Perbesar / perkecil / sesuaikan layar |
 | `Ctrl` + scroll | Zoom di area kanvas |
+| `Ctrl` / `Cmd` ditahan saat menggeser | Matikan smart guides & snap sementara |
 | `Delete` | Hapus elemen terpilih |
 | `Esc` | Keluar dari mode gambar / batalkan seleksi |
 | Panah (`Shift` = 10 px) | Geser elemen terpilih |
@@ -118,6 +163,10 @@ src/
     project.js       model data project & halaman
     db.js            wrapper IndexedDB + helper localStorage
     fabricUtils.js   factory objek Fabric, kunci, snapshot, salin style
+    bubbles.js       path & factory balon chat
+    frames.js        katalog bingkai, clipPath, dan pengisian gambar
+    textEffects.js   preset efek teks
+    snapping.js      perhitungan & penggambaran smart guides
     exporters.js     render PNG/PDF dan unduh/baca berkas
   context/
     EditorContext.jsx  state editor: halaman, seleksi, undo/redo, auto-save
