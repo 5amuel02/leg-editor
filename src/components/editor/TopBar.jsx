@@ -7,6 +7,7 @@ import {
   FileDown,
   FileJson,
   Loader2,
+  Magnet,
   Maximize,
   Minus,
   Plus,
@@ -39,6 +40,8 @@ export default function TopBar({ onBack, onExportPNG, onExportAllPNG, onExportPD
     lastSavedAt,
     pages,
     activeIndex,
+    snapEnabled,
+    setSnapEnabled,
   } = useEditor()
 
   const [name, setName] = useState(project.name)
@@ -116,6 +119,19 @@ export default function TopBar({ onBack, onExportPNG, onExportAllPNG, onExportPD
           <Maximize size={14} />
         </IconButton>
       </div>
+
+      {/* Saklar smart guides; tahan Ctrl/Cmd untuk mematikannya sesaat */}
+      <IconButton
+        label={
+          snapEnabled
+            ? 'Smart guides aktif — tahan Ctrl/Cmd saat menggeser untuk mematikan sementara'
+            : 'Smart guides nonaktif'
+        }
+        active={snapEnabled}
+        onClick={() => setSnapEnabled((v) => !v)}
+      >
+        <Magnet size={17} />
+      </IconButton>
 
       {/* ---------------- Status simpan ---------------- */}
       <div className="ml-auto flex items-center gap-2">

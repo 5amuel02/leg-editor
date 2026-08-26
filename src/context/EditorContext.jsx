@@ -20,6 +20,7 @@ import {
   syncLockState,
   tagObject,
 } from '../lib/fabricUtils'
+import { computeSnap, drawGuides, isSnapSuppressed, snapAngle } from '../lib/snapping'
 import { MAX_ZOOM, MIN_ZOOM, THUMB_WIDTH } from '../lib/constants'
 import { createEmptyPage, renumberPages, uid } from '../lib/project'
 import { saveProject } from '../lib/db'
@@ -65,6 +66,7 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
   const [brush, setBrush] = useState({ type: 'pen', color: '#1e293b', width: 6 })
   const [copiedStyle, setCopiedStyle] = useState(null)
   const [formatPainterOn, setFormatPainterOn] = useState(false)
+  const [snapEnabled, setSnapEnabled] = useState(true)
 
   /* Ref-ref pembantu (tidak memicu render ulang) */
   const projectRef = useRef(project)
@@ -76,6 +78,8 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
   const clipboardRef = useRef(null)
   const formatPainterRef = useRef(false)
   const copiedStyleRef = useRef(null)
+  const snapEnabledRef = useRef(true)
+  const guidesRef = useRef([]) // garis bantu yang sedang tampil
 
   useEffect(() => {
     projectRef.current = project
@@ -89,6 +93,9 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
   useEffect(() => {
     copiedStyleRef.current = copiedStyle
   }, [copiedStyle])
+  useEffect(() => {
+    snapEnabledRef.current = snapEnabled
+  }, [snapEnabled])
 
   const size = project.size
   const activePage = project.pages[activeIndex] || project.pages[0]
@@ -257,10 +264,56 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       })
       canvas.on('selection:created', refreshSelection)
       canvas.on('selection:updated', refreshSelection)
-      canvas.on('selection:cleared', () => setSelection([]))
-      canvas.on('object:moving', () => setPropsVersion((v) => v + 1))
+      /* ---------------- Smart guides & snapping ---------------- */
+
+      /** Menghapus garis bantu lalu meminta satu render agar kanvas atas bersih. */
+      const clearGuides = () => {
+        if (guidesRef.current.length === 0) return
+        guidesRef.current = []
+        canvas.requestRenderAll()
+      }
+
+      canvas.on('selection:cleared', () => {
+        setSelection([])
+        clearGuides()
+      })
       canvas.on('object:scaling', () => setPropsVersion((v) => v + 1))
-      canvas.on('object:rotating', () => setPropsVersion((v) => v + 1))
+
+      canvas.on('object:moving', (e) => {
+        setPropsVersion((v) => v + 1)
+        if (!snapEnabledRef.current || isSnapSuppressed(e.e)) {
+          clearGuides()
+          return
+        }
+        const { width, height } = projectRef.current.size
+        const { dx, dy, guides } = computeSnap({
+          canvas,
+          target: e.target,
+          sceneWidth: width,
+          sceneHeight: height,
+          zoom: canvas.getZoom(),
+        })
+        if (dx || dy) {
+          e.target.set({ left: (e.target.left || 0) + dx, top: (e.target.top || 0) + dy })
+          e.target.setCoords()
+        }
+        guidesRef.current = guides
+      })
+
+      canvas.on('object:rotating', (e) => {
+        setPropsVersion((v) => v + 1)
+        if (!snapEnabledRef.current || isSnapSuppressed(e.e)) return
+        const snapped = snapAngle(e.target.angle)
+        if (snapped !== null) e.target.rotate(snapped)
+      })
+
+      // Garis bantu digambar setelah objek selesai dirender tiap frame.
+      canvas.on('after:render', () => {
+        if (guidesRef.current.length) drawGuides(canvas, guidesRef.current)
+      })
+
+      // Begitu tombol mouse dilepas, garis bantu langsung hilang.
+      canvas.on('mouse:up', clearGuides)
 
       // Path baru dari mode menggambar diberi identitas agar muncul di panel Layer.
       canvas.on('path:created', (e) => {
@@ -935,6 +988,8 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       lastSavedAt,
       copiedStyle,
       formatPainterOn,
+      snapEnabled,
+      setSnapEnabled,
       ...historyState,
 
       // kanvas
@@ -998,6 +1053,7 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       lastSavedAt,
       copiedStyle,
       formatPainterOn,
+      snapEnabled,
       historyState,
       attachCanvas,
       detachCanvas,
