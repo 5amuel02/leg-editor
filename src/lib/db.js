@@ -14,13 +14,40 @@ const DB_VERSION = 1
 export const STORE_PROJECTS = 'projects'
 export const STORE_UPLOADS = 'uploads'
 
-let dbPromise = null
+/**
+ * Font kustom sengaja ditaruh di DATABASE TERPISAH, bukan sebagai store baru
+ * di dalam `leg-editor`.
+ *
+ * Menambah store berarti menaikkan versi database, dan upgrade hanya bisa
+ * berjalan kalau tidak ada koneksi lama yang terbuka. Untuk fitur tambahan
+ * seperti font, itu risiko yang tidak sepadan: satu upgrade yang tersendat
+ * membuat SELURUH project pengguna tidak bisa dibaca. Database baru bersifat
+ * aditif — pengguna lama sama sekali tidak tersentuh.
+ */
+const FONT_DB_NAME = 'leg-editor-fonts'
+const FONT_DB_VERSION = 1
+export const STORE_FONTS = 'fonts'
 
-/** Membuka (dan membuat bila perlu) database IndexedDB. */
+let dbPromise = null
+let fontDbPromise = null
+
+/**
+ * Membuka (dan membuat bila perlu) database IndexedDB.
+ *
+ * Menaikkan `DB_VERSION` memerlukan upgrade, dan upgrade tidak bisa berjalan
+ * selama masih ada tab lain yang memegang koneksi versi lama. Tanpa penanganan
+ * `onblocked`, promise ini tidak akan pernah selesai dan seluruh aplikasi
+ * menggantung di layar kosong tanpa pesan apa pun — jadi kondisi itu ditangkap
+ * dan diubah menjadi error yang bisa ditampilkan.
+ *
+ * `onversionchange` menutup koneksi ini begitu tab LAIN memulai upgrade,
+ * supaya tab inilah yang mengalah dan tab baru tidak ikut tersendat.
+ */
 function openDB() {
   if (dbPromise) return dbPromise
   dbPromise = new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION)
+
     req.onupgradeneeded = () => {
       const db = req.result
       if (!db.objectStoreNames.contains(STORE_PROJECTS)) {
@@ -32,10 +59,70 @@ function openDB() {
         s.createIndex('createdAt', 'createdAt')
       }
     }
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
+
+    req.onblocked = () => {
+      dbPromise = null
+      reject(
+        new Error(
+          'Penyimpanan sedang dipakai tab lain. Tutup tab LEG Editor yang lain lalu muat ulang halaman ini.',
+        ),
+      )
+    }
+
+    req.onsuccess = () => {
+      const db = req.result
+      db.onversionchange = () => {
+        db.close()
+        dbPromise = null
+      }
+      resolve(db)
+    }
+
+    req.onerror = () => {
+      dbPromise = null
+      reject(req.error)
+    }
   })
   return dbPromise
+}
+
+/**
+ * Membuka database font. Struktur dan penanganan errornya sama seperti
+ * `openDB`, hanya databasenya yang berbeda.
+ */
+function openFontDB() {
+  if (fontDbPromise) return fontDbPromise
+  fontDbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open(FONT_DB_NAME, FONT_DB_VERSION)
+
+    req.onupgradeneeded = () => {
+      const db = req.result
+      if (!db.objectStoreNames.contains(STORE_FONTS)) {
+        const s = db.createObjectStore(STORE_FONTS, { keyPath: 'id' })
+        s.createIndex('createdAt', 'createdAt')
+      }
+    }
+
+    req.onblocked = () => {
+      fontDbPromise = null
+      reject(new Error('Penyimpanan font sedang dipakai tab lain.'))
+    }
+
+    req.onsuccess = () => {
+      const db = req.result
+      db.onversionchange = () => {
+        db.close()
+        fontDbPromise = null
+      }
+      resolve(db)
+    }
+
+    req.onerror = () => {
+      fontDbPromise = null
+      reject(req.error)
+    }
+  })
+  return fontDbPromise
 }
 
 /** Helper generik untuk menjalankan satu transaksi. */
@@ -116,6 +203,40 @@ export async function saveUpload(upload) {
 
 export async function deleteUpload(id) {
   await dbDelete(STORE_UPLOADS, id)
+}
+
+/** Transaksi pada database font (terpisah dari database project). */
+async function fontTx(mode, fn) {
+  const db = await openFontDB()
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_FONTS, mode)
+    const store = transaction.objectStore(STORE_FONTS)
+    let result
+    try {
+      result = fn(store)
+    } catch (err) {
+      reject(err)
+      return
+    }
+    transaction.oncomplete = () => resolve(result?.result ?? result)
+    transaction.onerror = () => reject(transaction.error)
+    transaction.onabort = () => reject(transaction.error)
+  })
+}
+
+/** Ambil semua font kustom, terlama di depan (urutan unggah). */
+export async function listFonts() {
+  const all = (await fontTx('readonly', (store) => store.getAll())) || []
+  return all.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
+}
+
+export async function saveFont(font) {
+  await fontTx('readwrite', (store) => store.put(font))
+  return font
+}
+
+export async function deleteFont(id) {
+  await fontTx('readwrite', (store) => store.delete(id))
 }
 
 /* ------------------------------------------------------------------ */

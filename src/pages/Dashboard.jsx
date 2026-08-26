@@ -30,8 +30,10 @@ export default function Dashboard({ onOpenProject }) {
     setLoading(true)
     try {
       setProjects(await listProjects())
-    } catch {
-      toast.error('Gagal membaca penyimpanan lokal (IndexedDB).')
+    } catch (err) {
+      // `openDB` memberi pesan spesifik untuk kasus yang bisa ditindaklanjuti
+      // pengguna (mis. penyimpanan terkunci tab lain) — tampilkan apa adanya.
+      toast.error(err?.message || 'Gagal membaca penyimpanan lokal (IndexedDB).')
     } finally {
       setLoading(false)
     }

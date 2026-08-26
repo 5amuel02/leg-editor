@@ -3,6 +3,7 @@ import Dashboard from './pages/Dashboard'
 import EditorPage from './pages/EditorPage'
 import { ToastProvider } from './components/ui/Toast'
 import { lsGet, lsSet } from './lib/db'
+import { loadCustomFonts, notifyFontsChanged } from './lib/fonts'
 
 /**
  * Root aplikasi.
@@ -19,6 +20,17 @@ export default function App() {
   useEffect(() => {
     const last = lsGet('lastProjectId', null)
     if (last) setActiveProjectId(last)
+  }, [])
+
+  /*
+   * Mendaftarkan ulang font kustom sekali di awal. Tanpa ini, teks yang
+   * memakai font unggahan akan jatuh ke font pengganti setiap kali halaman
+   * dimuat ulang, karena FontFace tidak bertahan antar sesi.
+   */
+  useEffect(() => {
+    loadCustomFonts().then((families) => {
+      if (families.length > 0) notifyFontsChanged()
+    })
   }, [])
 
   const openEditor = useCallback((projectId) => {

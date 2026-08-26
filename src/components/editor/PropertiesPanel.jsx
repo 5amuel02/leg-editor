@@ -26,6 +26,7 @@ import {
 import { useEditor } from '../../context/EditorContext'
 import { getLegType, groupStyleSource, readTableStyle } from '../../lib/fabricUtils'
 import { FONT_FAMILIES, STROKE_STYLES } from '../../lib/constants'
+import { useFontOptions } from '../../hooks/useCustomFonts'
 import { MASK_SHAPES, createClipShape } from '../../lib/frames'
 import {
   DEFAULT_EFFECT_COLOR,
@@ -325,6 +326,8 @@ function PageProperties({ page, index, total, size, updatePage, setPageBackgroun
 }
 
 function TextProperties({ target, update, applyEffect }) {
+  // Font bawaan + font kustom yang diunggah pengguna, dalam satu dropdown.
+  const fontOptions = useFontOptions()
   const isBold = target.fontWeight === 'bold' || Number(target.fontWeight) >= 600
   return (
     <div className="space-y-3">
@@ -335,7 +338,7 @@ function TextProperties({ target, update, applyEffect }) {
         className="w-full"
         value={target.fontFamily || FONT_FAMILIES[0]}
         onChange={(v) => update({ fontFamily: v })}
-        options={FONT_FAMILIES.map((f) => ({ value: f, label: f.split(',')[0] }))}
+        options={fontOptions.map((o) => ({ value: o.value, label: o.label.split(',')[0] }))}
       />
 
       <FieldRow label="Ukuran">

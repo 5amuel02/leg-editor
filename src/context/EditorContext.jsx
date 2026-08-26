@@ -24,6 +24,7 @@ import {
 import { computeSnap, drawGuides, isSnapSuppressed, snapAngle } from '../lib/snapping'
 import { MAX_ZOOM, MIN_ZOOM, THUMB_WIDTH } from '../lib/constants'
 import { createEmptyPage, renumberPages, uid } from '../lib/project'
+import { FONTS_CHANGED_EVENT } from '../lib/fonts'
 import { saveProject } from '../lib/db'
 
 const EditorContext = createContext(null)
@@ -1003,6 +1004,25 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
     const canvas = canvasRef.current
     if (canvas && next !== 'select') canvas.discardActiveObject()
     canvas?.requestRenderAll()
+  }, [])
+
+  /*
+   * Font kustom sering baru selesai didaftarkan SETELAH teks dirender, jadi
+   * Fabric sudah terlanjur mengukur teks memakai font pengganti. Saat daftar
+   * font berubah, paksa setiap teks mengukur ulang dirinya.
+   */
+  useEffect(() => {
+    const onFontsChanged = () => {
+      const canvas = canvasRef.current
+      if (!canvas) return
+      canvas.getObjects().forEach((obj) => {
+        if (typeof obj.initDimensions === 'function') obj.initDimensions()
+        obj.setCoords()
+      })
+      canvas.requestRenderAll()
+    }
+    window.addEventListener(FONTS_CHANGED_EVENT, onFontsChanged)
+    return () => window.removeEventListener(FONTS_CHANGED_EVENT, onFontsChanged)
   }, [])
 
   /* Menyusun brush Fabric setiap kali tool/konfigurasi brush berubah. */
