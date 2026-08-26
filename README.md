@@ -48,7 +48,7 @@ npm run lint      # oxlint
 | --- | --- |
 | **Elemen** | Bentuk dasar (kotak, kotak sudut bulat, lingkaran, elips, segitiga, belah ketupat, bintang, segi enam, garis, panah), 9 varian balon chat, dan 30 bingkai gambar dalam kategori Bentuk Dasar / Perangkat / Kertas. |
 | **Teks** | Tombol kotak teks polos + preset judul (besar-bold), subjudul (medium), dan teks isi (kecil). |
-| **Unggahan** | Grid semua gambar yang pernah diunggah (tersimpan lokal), tombol unggah baru, klik atau seret ke kanvas. |
+| **Unggahan** | Grid semua gambar yang pernah diunggah (tersimpan lokal), tombol unggah baru, klik atau seret ke kanvas. Gambar yang ditempel lewat `Ctrl+V` ikut masuk ke sini otomatis. |
 | **Alat** | Tiga jenis brush (pena, stabilo transparan, spidol tebal) dengan warna & ketebalan custom — palet cepatnya memuat putih untuk menggambar di atas latar gelap — penghapus coretan, dan pembuat tabel baris × kolom. |
 | **Layer** | Daftar semua elemen halaman aktif: reorder, sembunyi/tampil, kunci/buka, duplikat, hapus. |
 
@@ -65,7 +65,9 @@ bawa ke depan / kirim ke belakang), **Format Painter**, duplikat, dan hapus.
 - Teks: font (dengan pratinjau tipografi di dropdown), ukuran, warna,
   bold/italic/underline/coret, perataan, jarak baris & huruf, plus 16 preset
   **efek teks** lengkap dengan pemilih warna aksen dan slider intensitas.
-- Bentuk: warna isi, garis, ketebalan, jenis garis, sudut membulat.
+- Bentuk: **warna isi dan warna garis diatur terpisah**, ketebalan, jenis garis,
+  sudut membulat. Di toolbar mengambang keduanya tampil berdampingan — kotak
+  terisi untuk warna isi, cincin untuk warna garis.
 - Tabel: latar sel, warna & ketebalan garis, warna teks, ukuran teks.
 - Gambar: crop, potong ke 11 bentuk dari katalog bingkai, garis tepi.
 - Bingkai & balon chat: warna isi, garis, ketebalan, dan jenis garis.
@@ -125,7 +127,9 @@ ekspor, simpan, serta indikator status auto-save.
 
 ### Ekspor & penyimpanan
 
-- **PNG** per halaman dengan pengali 1x / 2x / 3x (resolusi tinggi).
+- Pilih **resolusi 1x / 2x / 3x** sekali di atas menu ekspor — pilihan itu
+  berlaku untuk ketiga tombol di bawahnya.
+- **PNG** halaman yang sedang aktif.
 - **PNG massal** untuk semua halaman sekaligus.
 - **PDF multi-halaman** berukuran persis mengikuti dimensi kanvas.
 - **Berkas project `.json`** berisi seluruh halaman — bisa diunduh dan dimuat kembali
@@ -142,7 +146,8 @@ terpengaruh zoom/pan yang sedang aktif dan halaman non-aktif pun ikut terekspor.
 | Pintasan | Fungsi |
 | --- | --- |
 | `Ctrl+Z` / `Ctrl+Shift+Z` | Undo / redo |
-| `Ctrl+C` / `Ctrl+V` | Salin / tempel elemen |
+| `Ctrl+C` | Salin elemen terpilih |
+| `Ctrl+V` | Tempel gambar dari clipboard sistem ke kanvas (otomatis tersimpan ke Unggahan), atau tempel elemen yang tadi disalin |
 | `Ctrl+D` | Duplikat elemen |
 | `Ctrl+S` | Simpan project ke browser |
 | `Ctrl` + `+` / `-` / `0` | Perbesar / perkecil / sesuaikan layar |
@@ -171,7 +176,8 @@ src/
   context/
     EditorContext.jsx  state editor: halaman, seleksi, undo/redo, auto-save
   hooks/
-    useShortcuts.js    pintasan keyboard
+    useShortcuts.js       pintasan keyboard
+    useClipboardPaste.js  tempel gambar dari clipboard sistem
   components/
     ui/                komponen dasar (Button, Modal, ColorPicker, Toast, Field)
     dashboard/         kartu project & modal pilih ukuran
