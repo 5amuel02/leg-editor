@@ -7,6 +7,7 @@ import { getImageSize, readImageFile } from '../../../lib/exporters'
 import { createImage } from '../../../lib/fabricUtils'
 import { fillFrameWithImage } from '../../../lib/frames'
 import { uid } from '../../../lib/project'
+import { UPLOADS_CHANGED_EVENT } from '../../../hooks/useClipboardPaste'
 import Button from '../../ui/Button'
 
 const MAX_FILE_MB = 12
@@ -38,6 +39,13 @@ export default function UploadsPanel() {
 
   useEffect(() => {
     refresh()
+  }, [refresh])
+
+  /* Gambar yang ditempel lewat Ctrl+V ikut masuk pustaka — segarkan daftarnya. */
+  useEffect(() => {
+    const onChanged = () => refresh()
+    window.addEventListener(UPLOADS_CHANGED_EVENT, onChanged)
+    return () => window.removeEventListener(UPLOADS_CHANGED_EVENT, onChanged)
   }, [refresh])
 
   /** Menyimpan berkas gambar terpilih ke penyimpanan lokal. */

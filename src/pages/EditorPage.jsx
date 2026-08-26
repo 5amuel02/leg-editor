@@ -12,6 +12,7 @@ import {
 } from '../lib/exporters'
 import { useToast } from '../components/ui/Toast'
 import useShortcuts from '../hooks/useShortcuts'
+import useClipboardPaste from '../hooks/useClipboardPaste'
 import TopBar from '../components/editor/TopBar'
 import LeftSidebar from '../components/editor/LeftSidebar'
 import CanvasStage from '../components/editor/CanvasStage'
@@ -102,6 +103,13 @@ function EditorShell({ onBack, toast }) {
   }, [persist, toast])
 
   useShortcuts({ onSave: handleSave })
+
+  /* Ctrl/Cmd+V: tempel gambar dari clipboard sistem langsung ke kanvas. */
+  const notify = useCallback(
+    (message, type) => (type === 'error' ? toast.error(message) : toast.success(message)),
+    [toast],
+  )
+  useClipboardPaste({ onNotify: notify })
 
   /* Simpan sekali lagi saat editor ditutup agar tidak ada perubahan hilang. */
   useEffect(() => {

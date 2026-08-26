@@ -21,7 +21,6 @@ export default function useShortcuts({ onSave } = {}) {
     deleteSelected,
     duplicateObject,
     copySelection,
-    pasteClipboard,
     setTool,
     tool,
     zoom,
@@ -59,11 +58,10 @@ export default function useShortcuts({ onSave } = {}) {
         copySelection()
         return
       }
-      if (mod && e.key.toLowerCase() === 'v') {
-        e.preventDefault()
-        pasteClipboard()
-        return
-      }
+      // Ctrl+V sengaja TIDAK ditangani di sini: preventDefault pada keydown
+      // akan membatalkan event `paste`, padahal hanya event itu yang membawa
+      // isi clipboard sistem (mis. gambar hasil screenshot). Penempelan
+      // ditangani sepenuhnya oleh useClipboardPaste.
       if (mod && e.key.toLowerCase() === 'd') {
         e.preventDefault()
         duplicateObject()
@@ -133,7 +131,6 @@ export default function useShortcuts({ onSave } = {}) {
     deleteSelected,
     duplicateObject,
     copySelection,
-    pasteClipboard,
     setTool,
     tool,
     zoom,
