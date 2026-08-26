@@ -50,6 +50,7 @@ export default function FloatingToolbar({ onRequestCrop }) {
     cancelFormatPainter,
     groupSelection,
     ungroupSelection,
+    transforming,
   } = useEditor()
 
   const target = selection.length === 1 ? selection[0] : null
@@ -72,6 +73,11 @@ export default function FloatingToolbar({ onRequestCrop }) {
   }, [selection, propsVersion, zoom])
 
   if (!position) return null
+
+  // Toolbar melayang tepat di atas elemen terpilih — persis tempat label jarak
+  // muncul saat dua elemen bertumpuk tegak. Disembunyikan selama interaksi
+  // supaya garis bantu dan angka jaraknya tidak tertutup.
+  if (transforming) return null
 
   const type = target ? getLegType(target) : 'multi'
   const isText = type === 'text'

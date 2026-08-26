@@ -30,7 +30,7 @@ import {
   isUniformScaling,
   snapAngle,
 } from '../lib/snapping'
-import { drawMeasurement } from '../lib/measurement'
+import { drawDistances, drawMeasurement } from '../lib/measurement'
 import { MAX_ZOOM, MIN_ZOOM, THUMB_WIDTH } from '../lib/constants'
 import { createEmptyPage, renumberPages, uid } from '../lib/project'
 import { FONTS_CHANGED_EVENT } from '../lib/fonts'
@@ -78,6 +78,15 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
   const [copiedStyle, setCopiedStyle] = useState(null)
   const [formatPainterOn, setFormatPainterOn] = useState(false)
   const [snapEnabled, setSnapEnabled] = useState(true)
+  /*
+   * Menandai bahwa sebuah elemen sedang digeser/diresize/diputar.
+   *
+   * Dipakai untuk menyembunyikan toolbar mengambang selama interaksi: toolbar
+   * itu melayang tepat DI ATAS elemen terpilih, yaitu persis tempat label
+   * jarak muncul saat dua elemen bertumpuk secara tegak — tanpa ini, angkanya
+   * tertutup dan fitur pengukuran jadi tidak terlihat.
+   */
+  const [transforming, setTransforming] = useState(false)
 
   /* Ref-ref pembantu (tidak memicu render ulang) */
   const projectRef = useRef(project)
@@ -91,6 +100,7 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
   const copiedStyleRef = useRef(null)
   const snapEnabledRef = useRef(true)
   const guidesRef = useRef([]) // garis bantu yang sedang tampil
+  const distancesRef = useRef([]) // label jarak (px) di sepanjang garis bantu
   const measureRef = useRef(null) // { target, mode } badge ukuran/posisi
 
   useEffect(() => {
@@ -278,17 +288,29 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       canvas.on('selection:updated', refreshSelection)
       /* ---------------- Smart guides & snapping ---------------- */
 
-      /** Menghapus garis bantu lalu meminta satu render agar kanvas atas bersih. */
+      /**
+       * Menghapus garis bantu beserta label jaraknya, lalu meminta satu render
+       * agar kanvas atas bersih. Keduanya satu sistem — label jarak tidak punya
+       * arti tanpa garis bantu yang diukurnya.
+       */
       const clearGuides = () => {
-        if (guidesRef.current.length === 0) return
+        if (guidesRef.current.length === 0 && distancesRef.current.length === 0) return
         guidesRef.current = []
+        distancesRef.current = []
         canvas.requestRenderAll()
       }
 
-      /** Membersihkan seluruh lapisan bantu: garis bantu dan badge ukuran. */
+      /** Membersihkan seluruh lapisan bantu: garis bantu, label jarak, badge. */
       const clearOverlays = () => {
-        if (guidesRef.current.length === 0 && !measureRef.current) return
+        if (
+          guidesRef.current.length === 0 &&
+          distancesRef.current.length === 0 &&
+          !measureRef.current
+        ) {
+          return
+        }
         guidesRef.current = []
+        distancesRef.current = []
         measureRef.current = null
         canvas.requestRenderAll()
       }
@@ -300,6 +322,7 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
 
       canvas.on('object:scaling', (e) => {
         setPropsVersion((v) => v + 1)
+        setTransforming(true)
         measureRef.current = { target: e.target, mode: 'size' }
 
         if (!snapEnabledRef.current || isSnapSuppressed(e.e)) {
@@ -324,13 +347,14 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
 
       canvas.on('object:moving', (e) => {
         setPropsVersion((v) => v + 1)
+        setTransforming(true)
         measureRef.current = { target: e.target, mode: 'position' }
         if (!snapEnabledRef.current || isSnapSuppressed(e.e)) {
           clearGuides()
           return
         }
         const { width, height } = projectRef.current.size
-        const { dx, dy, guides } = computeSnap({
+        const { dx, dy, guides, distances } = computeSnap({
           canvas,
           target: e.target,
           sceneWidth: width,
@@ -342,10 +366,12 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
           e.target.setCoords()
         }
         guidesRef.current = guides
+        distancesRef.current = distances
       })
 
       canvas.on('object:rotating', (e) => {
         setPropsVersion((v) => v + 1)
+        setTransforming(true)
         measureRef.current = { target: e.target, mode: 'angle' }
         if (!snapEnabledRef.current || isSnapSuppressed(e.e)) return
         const snapped = snapAngle(e.target.angle)
@@ -355,13 +381,17 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       // Lapisan bantu digambar setelah objek selesai dirender tiap frame.
       canvas.on('after:render', () => {
         if (guidesRef.current.length) drawGuides(canvas, guidesRef.current)
+        if (distancesRef.current.length) drawDistances(canvas, distancesRef.current)
         if (measureRef.current) {
           drawMeasurement(canvas, measureRef.current.target, measureRef.current.mode)
         }
       })
 
       // Begitu tombol mouse dilepas, garis bantu & badge langsung hilang.
-      canvas.on('mouse:up', clearOverlays)
+      canvas.on('mouse:up', () => {
+        setTransforming(false)
+        clearOverlays()
+      })
 
       // Path baru dari mode menggambar diberi identitas agar muncul di panel Layer.
       canvas.on('path:created', (e) => {
@@ -1169,6 +1199,7 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       formatPainterOn,
       snapEnabled,
       setSnapEnabled,
+      transforming,
       ...historyState,
 
       // kanvas
@@ -1236,6 +1267,7 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       copiedStyle,
       formatPainterOn,
       snapEnabled,
+      transforming,
       historyState,
       attachCanvas,
       detachCanvas,

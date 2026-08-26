@@ -235,6 +235,30 @@ dan posisi bisa diatur presisi tanpa menebak:
 Badge diletakkan di bawah elemen, atau di atasnya bila ruang di bawah sudah
 habis, dan hilang bersama garis bantu begitu tombol mouse dilepas.
 
+### Indikator jarak
+
+Saat elemen digeser dan sebuah garis bantu muncul, angka jarak (px) ikut
+tampil di sepanjang garis ukur — mirip Figma:
+
+| Acuan snap | Yang diukur |
+| --- | --- |
+| Elemen lain | Celah antara kedua elemen, diukur tegak lurus terhadap garis bantu |
+| Tepi/tengah kanvas | Margin elemen ke kedua tepi kanvas pada sumbu garis bantu |
+
+Arah pengukurannya selalu tegak lurus terhadap garis bantu, dan itu memang yang
+bermakna: garis bantu tegak berarti kedua elemen sudah sejajar mendatar, jadi
+yang tersisa untuk diukur adalah celah tegak di antara keduanya. Bila kedua
+elemen saling tumpang tindih pada sumbu itu, tidak ada celah dan labelnya tidak
+ditampilkan. Margin bernilai nol juga dilewati — angka "0" saat elemen menempel
+di tepi kanvas hanya menambah keriuhan.
+
+Saat elemen snap ke tengah kanvas, dua angka yang sama besar di kiri dan kanan
+menjadi konfirmasi bahwa posisinya benar-benar di tengah.
+
+Selama menggeser, meresize, atau memutar, **toolbar mengambang disembunyikan**.
+Toolbar itu melayang tepat di atas elemen terpilih — persis tempat label jarak
+muncul saat dua elemen bertumpuk tegak — jadi tanpa ini angkanya tertutup.
+
 ### Multi-halaman
 
 Tambah, duplikat, hapus, sembunyikan, kunci, dan geser urutan halaman lewat panel

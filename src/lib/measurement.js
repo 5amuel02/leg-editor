@@ -8,6 +8,7 @@
  * membersihkan kanvas atas sendiri lewat `contextTopDirty` sehingga badge
  * otomatis hilang begitu interaksi selesai.
  */
+import { GUIDE_COLOR } from './snapping'
 
 /*
  * Latar badge memakai hitam netral, bukan merah merek: badge sering muncul
@@ -45,6 +46,12 @@ export function measurementText(target, mode) {
   return `X ${Math.round(box.left)}   Y ${Math.round(box.top)}`
 }
 
+/* Label jarak memakai warna garis bantu supaya terbaca sebagai satu sistem. */
+const DIST_FONT = '600 10px ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif'
+const DIST_PAD_X = 5
+const DIST_PAD_Y = 3
+const TICK = 3
+
 /** Persegi panjang bersudut bulat, dengan cadangan untuk browser tanpa roundRect. */
 function roundedRect(ctx, x, y, w, h, r) {
   if (typeof ctx.roundRect === 'function') {
@@ -59,6 +66,78 @@ function roundedRect(ctx, x, y, w, h, r) {
   ctx.arcTo(x, y + h, x, y, r)
   ctx.arcTo(x, y, x + w, y, r)
   ctx.closePath()
+}
+
+/**
+ * Menggambar garis ukur jarak beserta angkanya (px) di sepanjang garis bantu.
+ *
+ * Setiap jarak digambar sebagai garis bergaris-silang di kedua ujung, dengan
+ * angka di tengahnya. Angka diletakkan TEPAT di atas garis, bukan di sampingnya,
+ * supaya jelas angka itu mengukur garis yang mana saat ada beberapa jarak
+ * tampil sekaligus.
+ */
+export function drawDistances(canvas, distances) {
+  if (!canvas || !distances || distances.length === 0) return
+  const ctx = canvas.getSelectionContext()
+  if (!ctx) return
+
+  const vpt = canvas.viewportTransform
+  const sx = (x) => x * vpt[0] + vpt[4]
+  const sy = (y) => y * vpt[3] + vpt[5]
+
+  ctx.save()
+  ctx.font = DIST_FONT
+  ctx.textBaseline = 'middle'
+  ctx.textAlign = 'center'
+  ctx.strokeStyle = GUIDE_COLOR
+  ctx.lineWidth = 1
+  ctx.setLineDash([])
+
+  distances.forEach((d) => {
+    let x1, y1, x2, y2
+    if (d.axis === 'v') {
+      // +0.5 supaya garis jatuh tepat di tengah piksel dan tetap tajam.
+      x1 = x2 = Math.round(sx(d.pos)) + 0.5
+      y1 = sy(d.from)
+      y2 = sy(d.to)
+    } else {
+      y1 = y2 = Math.round(sy(d.pos)) + 0.5
+      x1 = sx(d.from)
+      x2 = sx(d.to)
+    }
+
+    ctx.beginPath()
+    ctx.moveTo(x1, y1)
+    ctx.lineTo(x2, y2)
+    if (d.axis === 'v') {
+      ctx.moveTo(x1 - TICK, y1)
+      ctx.lineTo(x1 + TICK, y1)
+      ctx.moveTo(x2 - TICK, y2)
+      ctx.lineTo(x2 + TICK, y2)
+    } else {
+      ctx.moveTo(x1, y1 - TICK)
+      ctx.lineTo(x1, y1 + TICK)
+      ctx.moveTo(x2, y2 - TICK)
+      ctx.lineTo(x2, y2 + TICK)
+    }
+    ctx.stroke()
+
+    const text = `${Math.round(d.value)}`
+    const w = ctx.measureText(text).width + DIST_PAD_X * 2
+    const h = 10 + DIST_PAD_Y * 2
+    const mx = (x1 + x2) / 2
+    const my = (y1 + y2) / 2
+
+    ctx.fillStyle = GUIDE_COLOR
+    roundedRect(ctx, mx - w / 2, my - h / 2, w, h, 3)
+    ctx.fill()
+
+    ctx.fillStyle = BADGE_FG
+    ctx.fillText(text, mx, my)
+  })
+
+  ctx.restore()
+  canvas.contextTopDirty = true
 }
 
 /**

@@ -95,13 +95,91 @@ function findBestMatch(anchors, candidates, tolerance) {
   return best
 }
 
+/** Jarak di bawah nilai ini tidak diberi label — hanya jadi keriuhan. */
+const MIN_DISTANCE = 1
+
+/**
+ * Menghitung garis ukur jarak untuk satu hasil pencocokan snap.
+ *
+ * Arah pengukurannya TEGAK LURUS terhadap garis bantu, dan itu memang yang
+ * bermakna: garis bantu tegak berarti kedua elemen sudah sejajar mendatar,
+ * jadi yang tersisa untuk diukur adalah celah tegak di antara keduanya.
+ *
+ * Dua kasus dibedakan:
+ * - Acuan berupa ELEMEN LAIN -> celah antar kotak batas. Bila keduanya saling
+ *   tumpang tindih pada sumbu itu, tidak ada celah dan tidak ada label.
+ * - Acuan berupa KANVAS -> margin elemen ke kedua tepi kanvas pada sumbu garis
+ *   bantu. Saat elemen snap ke tengah kanvas, dua angka yang sama besar di kiri
+ *   dan kanan justru menjadi konfirmasi bahwa posisinya benar-benar di tengah.
+ */
+function distancesFor(snapped, match, axis, sceneWidth, sceneHeight) {
+  const out = []
+  if (!match) return out
+
+  const other = match.candidate.box
+  const L = snapped.left
+  const R = snapped.left + snapped.width
+  const T = snapped.top
+  const B = snapped.top + snapped.height
+
+  if (axis === 'v') {
+    if (other) {
+      const oT = other.top
+      const oB = other.top + other.height
+      let from, to
+      if (T >= oB) [from, to] = [oB, T]
+      else if (oT >= B) [from, to] = [B, oT]
+      else return out
+
+      const value = to - from
+      if (value < MIN_DISTANCE) return out
+
+      // Digambar di tengah bagian yang bertumpang tindih secara mendatar,
+      // supaya garis ukur berada tepat di antara kedua elemen.
+      const overlapLeft = Math.max(L, other.left)
+      const overlapRight = Math.min(R, other.left + other.width)
+      const pos = overlapRight > overlapLeft ? (overlapLeft + overlapRight) / 2 : match.pos
+      out.push({ axis: 'v', pos, from, to, value })
+    } else {
+      const y = (T + B) / 2
+      if (L >= MIN_DISTANCE) out.push({ axis: 'h', pos: y, from: 0, to: L, value: L })
+      const right = sceneWidth - R
+      if (right >= MIN_DISTANCE) out.push({ axis: 'h', pos: y, from: R, to: sceneWidth, value: right })
+    }
+    return out
+  }
+
+  if (other) {
+    const oL = other.left
+    const oR = other.left + other.width
+    let from, to
+    if (L >= oR) [from, to] = [oR, L]
+    else if (oL >= R) [from, to] = [R, oL]
+    else return out
+
+    const value = to - from
+    if (value < MIN_DISTANCE) return out
+
+    const overlapTop = Math.max(T, other.top)
+    const overlapBottom = Math.min(B, other.top + other.height)
+    const pos = overlapBottom > overlapTop ? (overlapTop + overlapBottom) / 2 : match.pos
+    out.push({ axis: 'h', pos, from, to, value })
+  } else {
+    const x = (L + R) / 2
+    if (T >= MIN_DISTANCE) out.push({ axis: 'v', pos: x, from: 0, to: T, value: T })
+    const bottom = sceneHeight - B
+    if (bottom >= MIN_DISTANCE) out.push({ axis: 'v', pos: x, from: B, to: sceneHeight, value: bottom })
+  }
+  return out
+}
+
 /**
  * Menghitung koreksi posisi + garis bantu untuk objek yang sedang digeser.
  *
- * @returns {{ dx:number, dy:number, guides:Array }}
+ * @returns {{ dx:number, dy:number, guides:Array, distances:Array }}
  */
 export function computeSnap({ canvas, target, sceneWidth, sceneHeight, zoom }) {
-  const empty = { dx: 0, dy: 0, guides: [] }
+  const empty = { dx: 0, dy: 0, guides: [], distances: [] }
   if (!canvas || !target) return empty
 
   // Objek yang sedang digeser tidak boleh dijadikan acuan bagi dirinya sendiri.
@@ -151,7 +229,12 @@ export function computeSnap({ canvas, target, sceneWidth, sceneHeight, zoom }) {
     guides.push({ axis: 'h', pos: bestY.pos, from: left, to: right })
   }
 
-  return { dx, dy, guides }
+  const distances = [
+    ...distancesFor(snapped, bestX, 'v', sceneWidth, sceneHeight),
+    ...distancesFor(snapped, bestY, 'h', sceneWidth, sceneHeight),
+  ]
+
+  return { dx, dy, guides, distances }
 }
 
 /* ------------------------------------------------------------------ */
