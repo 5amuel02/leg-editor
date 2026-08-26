@@ -29,6 +29,8 @@ export default function useShortcuts({ onSave } = {}) {
     updateSelected,
     cancelFormatPainter,
     formatPainterOn,
+    groupSelection,
+    ungroupSelection,
   } = useEditor()
 
   useEffect(() => {
@@ -65,6 +67,12 @@ export default function useShortcuts({ onSave } = {}) {
       if (mod && e.key.toLowerCase() === 'd') {
         e.preventDefault()
         duplicateObject()
+        return
+      }
+      if (mod && e.key.toLowerCase() === 'g') {
+        e.preventDefault()
+        if (e.shiftKey) ungroupSelection()
+        else groupSelection()
         return
       }
       if (mod && e.key.toLowerCase() === 's') {
@@ -140,5 +148,7 @@ export default function useShortcuts({ onSave } = {}) {
     onSave,
     cancelFormatPainter,
     formatPainterOn,
+    groupSelection,
+    ungroupSelection,
   ])
 }

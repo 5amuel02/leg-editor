@@ -85,7 +85,7 @@ export function shadowPatch(value) {
 }
 
 /** Jenis elemen yang boleh diberi bayangan lewat panel properti. */
-export const SHADOW_TYPES = ['shape', 'bubble', 'frame', 'image', 'table', 'arrow', 'draw', 'line']
+export const SHADOW_TYPES = ['shape', 'bubble', 'frame', 'image', 'table', 'group', 'arrow', 'draw', 'line']
 
 export function supportsShadow(legType) {
   return SHADOW_TYPES.includes(legType)

@@ -10,6 +10,7 @@ import {
   Image as ImageIcon,
   Layers,
   Frame,
+  Group,
   Lock,
   MessageCircle,
   Minus,
@@ -35,6 +36,7 @@ const TYPE_ICONS = {
   table: Table,
   bubble: MessageCircle,
   frame: Frame,
+  group: Group,
 }
 
 /**

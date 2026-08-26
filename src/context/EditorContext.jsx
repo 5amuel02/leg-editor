@@ -10,6 +10,7 @@ import {
 import * as fabric from 'fabric'
 import {
   EXTRA_PROPS,
+  applyGroupPatch,
   applyLock,
   applyStyle,
   applyTablePatch,
@@ -569,6 +570,11 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
           applyTablePatch(obj, patch)
           return
         }
+        // Grup biasa juga perlu meneruskan warna ke anak-anaknya.
+        if (getLegType(obj) === 'group') {
+          applyGroupPatch(obj, patch)
+          return
+        }
         obj.set(patch)
         obj.setCoords()
       })
@@ -813,6 +819,70 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
     },
     [pushHistory, scheduleAutosave],
   )
+
+  /**
+   * Menggabungkan objek terpilih menjadi satu grup.
+   *
+   * Urutan tumpukan dipertahankan: objek diurutkan mengikuti posisinya di
+   * kanvas sebelum digabung, supaya elemen yang tadinya di depan tidak
+   * tiba-tiba pindah ke belakang di dalam grup.
+   */
+  const groupSelection = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const active = canvas.getActiveObject()
+    if (!active) return
+
+    const selected = canvas.getActiveObjects().filter((o) => !o.legLocked)
+    if (selected.length < 2) return
+
+    const order = canvas.getObjects()
+    const objects = [...selected].sort((a, b) => order.indexOf(a) - order.indexOf(b))
+
+    // `removeAll` mengembalikan koordinat anak ke ruang kanvas (absolut);
+    // tanpa ini objek akan melompat saat dimasukkan ke Group.
+    if (active.type === 'activeselection') active.removeAll()
+    canvas.discardActiveObject()
+    objects.forEach((obj) => canvas.remove(obj))
+
+    const group = tagObject(new fabric.Group(objects), 'group')
+    canvas.add(group)
+    canvas.setActiveObject(group)
+    canvas.requestRenderAll()
+
+    setObjectsVersion((v) => v + 1)
+    refreshSelection()
+    pushHistory()
+    scheduleAutosave()
+  }, [refreshSelection, pushHistory, scheduleAutosave])
+
+  /**
+   * Memecah grup kembali menjadi objek satuan, lalu menyeleksi semuanya.
+   * Tabel sengaja tidak bisa dipecah — strukturnya bergantung pada Group.
+   */
+  const ungroupSelection = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const group = canvas.getActiveObject()
+    if (!group || getLegType(group) !== 'group' || typeof group.removeAll !== 'function') return
+
+    const objects = group.removeAll()
+    canvas.remove(group)
+    objects.forEach((obj) => canvas.add(obj))
+
+    canvas.discardActiveObject()
+    if (objects.length > 1) {
+      canvas.setActiveObject(new fabric.ActiveSelection(objects, { canvas }))
+    } else if (objects.length === 1) {
+      canvas.setActiveObject(objects[0])
+    }
+    canvas.requestRenderAll()
+
+    setObjectsVersion((v) => v + 1)
+    refreshSelection()
+    pushHistory()
+    scheduleAutosave()
+  }, [refreshSelection, pushHistory, scheduleAutosave])
 
   /** Balik objek terpilih secara horizontal / vertikal. */
   const flipSelected = useCallback(
@@ -1061,6 +1131,8 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       orderSelected,
       alignSelected,
       distributeSelected,
+      groupSelection,
+      ungroupSelection,
       flipSelected,
       toggleObjectLock,
       toggleObjectVisibility,
@@ -1120,6 +1192,8 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       orderSelected,
       alignSelected,
       distributeSelected,
+      groupSelection,
+      ungroupSelection,
       flipSelected,
       toggleObjectLock,
       toggleObjectVisibility,

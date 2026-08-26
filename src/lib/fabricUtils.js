@@ -51,6 +51,7 @@ function defaultNameFor(legType) {
     image: 'Gambar',
     draw: 'Coretan',
     table: 'Tabel',
+    group: 'Grup',
   }
   return map[legType] || 'Elemen'
 }
@@ -420,6 +421,49 @@ export function applyTablePatch(group, patch) {
 
   group.setCoords()
   return group
+}
+
+/**
+ * Properti tampilan yang harus diteruskan ke anak-anak sebuah grup biasa.
+ * Sama seperti tabel, Fabric tidak meneruskan `fill`/`stroke` milik Group
+ * ke isinya — tanpa ini, mengubah warna grup tidak menghasilkan apa pun.
+ */
+export const GROUP_STYLE_KEYS = ['fill', 'stroke', 'strokeWidth', 'strokeDashArray']
+
+/**
+ * Menerapkan perubahan ke grup biasa (bukan tabel).
+ *
+ * Properti tampilan disalurkan ke setiap anak, sedangkan posisi, skala,
+ * rotasi, transparansi, dan bayangan tetap diterapkan pada grup itu sendiri
+ * supaya bayangannya mengikuti siluet grup, bukan tiap elemen satu per satu.
+ */
+export function applyGroupPatch(group, patch) {
+  const groupPatch = {}
+  Object.entries(patch).forEach(([key, value]) => {
+    if (GROUP_STYLE_KEYS.includes(key)) return
+    groupPatch[key] = value
+  })
+  group.set(groupPatch)
+
+  group.forEachObject?.((child) => {
+    GROUP_STYLE_KEYS.forEach((key) => {
+      if (key in patch) child.set(key, patch[key])
+    })
+  })
+
+  group.setCoords()
+  return group
+}
+
+/**
+ * Objek yang dipakai panel untuk MEMBACA style sebuah grup.
+ *
+ * `fill`/`stroke` milik Group sendiri tidak pernah dirender, jadi membacanya
+ * akan selalu menghasilkan default (hitam) dan membuat kotak warna di panel
+ * berbohong. Anak pertama adalah cerminan yang jauh lebih jujur.
+ */
+export function groupStyleSource(group) {
+  return group.getObjects?.()[0] || group
 }
 
 /** Mengambil nilai style tabel dari sel/teks pertama untuk ditampilkan di panel. */

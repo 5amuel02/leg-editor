@@ -13,16 +13,18 @@ import {
   Bold,
   Copy,
   Crop,
+  Group as GroupIcon,
   Italic,
   Lock,
   RotateCcw,
   Strikethrough,
   Trash2,
   Underline,
+  Ungroup as UngroupIcon,
   Unlock,
 } from 'lucide-react'
 import { useEditor } from '../../context/EditorContext'
-import { getLegType, readTableStyle } from '../../lib/fabricUtils'
+import { getLegType, groupStyleSource, readTableStyle } from '../../lib/fabricUtils'
 import { FONT_FAMILIES, STROKE_STYLES } from '../../lib/constants'
 import { MASK_SHAPES, createClipShape } from '../../lib/frames'
 import {
@@ -78,6 +80,8 @@ export default function PropertiesPanel({ onRequestCrop }) {
     updateSelected,
     alignSelected,
     distributeSelected,
+    groupSelection,
+    ungroupSelection,
     deleteSelected,
     duplicateObject,
     toggleObjectLock,
@@ -199,8 +203,13 @@ export default function PropertiesPanel({ onRequestCrop }) {
           <TextProperties target={target} update={updateSelected} applyEffect={applyEffect} />
         )}
 
-        {target && (type === 'shape' || type === 'bubble' || type === 'frame') && (
-          <FillStrokeProperties target={target} update={updateSelected} withFill />
+        {target && (type === 'shape' || type === 'bubble' || type === 'frame' || type === 'group') && (
+          <FillStrokeProperties
+            target={target}
+            update={updateSelected}
+            withFill
+            read={type === 'group' ? groupStyleSource(target) : undefined}
+          />
         )}
 
         {target && type === 'frame' && (
@@ -234,6 +243,19 @@ export default function PropertiesPanel({ onRequestCrop }) {
         {(target || multi) && (
           <div>
             <SectionTitle>Aksi</SectionTitle>
+            {(multi || type === 'group') && (
+              <div className="mb-1.5">
+                {multi ? (
+                  <Button size="sm" variant="secondary" className="w-full" onClick={groupSelection}>
+                    <GroupIcon size={14} /> Gabungkan jadi grup
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="secondary" className="w-full" onClick={ungroupSelection}>
+                    <UngroupIcon size={14} /> Pecah grup
+                  </Button>
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-3 gap-1.5">
               <Button size="sm" variant="secondary" onClick={() => duplicateObject()}>
                 <Copy size={14} /> Salin
@@ -478,10 +500,16 @@ function TextEffectsSection({ target, applyEffect }) {
   )
 }
 
-function FillStrokeProperties({ target, update, withFill }) {
+/**
+ * `read` memisahkan objek yang DITULIS (selalu `target`) dari objek yang
+ * DIBACA untuk menampilkan nilai saat ini. Keduanya sama untuk elemen biasa,
+ * tapi berbeda untuk grup — lihat `groupStyleSource`.
+ */
+function FillStrokeProperties({ target, update, withFill, read }) {
+  const src = read || target
   const dashId =
     STROKE_STYLES.find(
-      (s) => JSON.stringify(s.dash) === JSON.stringify(target.strokeDashArray || null),
+      (s) => JSON.stringify(s.dash) === JSON.stringify(src.strokeDashArray || null),
     )?.id || 'solid'
 
   return (
@@ -495,7 +523,7 @@ function FillStrokeProperties({ target, update, withFill }) {
             align="right"
             label="Warna isi"
             allowNone
-            value={typeof target.fill === 'string' ? target.fill : null}
+            value={typeof src.fill === 'string' ? src.fill : null}
             onChange={(c) => update({ fill: c })}
           />
         </FieldRow>
@@ -508,8 +536,8 @@ function FillStrokeProperties({ target, update, withFill }) {
           align="right"
           label="Warna garis"
           allowNone
-          value={typeof target.stroke === 'string' ? target.stroke : null}
-          onChange={(c) => update({ stroke: c, strokeWidth: c && !target.strokeWidth ? 2 : target.strokeWidth })}
+          value={typeof src.stroke === 'string' ? src.stroke : null}
+          onChange={(c) => update({ stroke: c, strokeWidth: c && !src.strokeWidth ? 2 : src.strokeWidth })}
         />
       </FieldRow>
 
@@ -519,8 +547,8 @@ function FillStrokeProperties({ target, update, withFill }) {
           min={0}
           max={60}
           step={1}
-          value={target.strokeWidth || 0}
-          onChange={(v) => update({ strokeWidth: v, stroke: target.stroke || '#1e293b' })}
+          value={src.strokeWidth || 0}
+          onChange={(v) => update({ strokeWidth: v, stroke: src.stroke || '#1e293b' })}
         />
       </div>
 
@@ -544,14 +572,14 @@ function FillStrokeProperties({ target, update, withFill }) {
         </div>
       </div>
 
-      {target.type === 'rect' && (
+      {src.type === 'rect' && (
         <div>
           <p className="mb-1 text-xs font-medium text-ink-500">Sudut membulat</p>
           <SliderInput
             min={0}
-            max={Math.round(Math.min(target.width, target.height) / 2)}
+            max={Math.round(Math.min(src.width, src.height) / 2)}
             step={1}
-            value={target.rx || 0}
+            value={src.rx || 0}
             onChange={(v) => update({ rx: v, ry: v })}
           />
         </div>

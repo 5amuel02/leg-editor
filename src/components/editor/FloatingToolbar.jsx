@@ -12,11 +12,13 @@ import {
   Crop,
   FlipHorizontal,
   FlipVertical,
+  Group,
   Layers,
   Minus,
   Paintbrush,
   Pencil,
   Trash2,
+  Ungroup,
 } from 'lucide-react'
 import { useEditor } from '../../context/EditorContext'
 import { getLegType } from '../../lib/fabricUtils'
@@ -46,6 +48,8 @@ export default function FloatingToolbar({ onRequestCrop }) {
     copyStyleFromSelection,
     formatPainterOn,
     cancelFormatPainter,
+    groupSelection,
+    ungroupSelection,
   } = useEditor()
 
   const target = selection.length === 1 ? selection[0] : null
@@ -282,6 +286,18 @@ export default function FloatingToolbar({ onRequestCrop }) {
       >
         <Paintbrush size={15} />
       </IconButton>
+
+      {/* Gabung muncul saat >1 elemen terpilih, Pecah saat yang terpilih grup. */}
+      {multi && (
+        <IconButton label="Gabungkan jadi grup (Ctrl+G)" size="sm" onClick={groupSelection}>
+          <Group size={15} />
+        </IconButton>
+      )}
+      {type === 'group' && (
+        <IconButton label="Pecah grup (Ctrl+Shift+G)" size="sm" onClick={ungroupSelection}>
+          <Ungroup size={15} />
+        </IconButton>
+      )}
 
       <span className="mx-1 h-5 w-px bg-ink-200" />
 
