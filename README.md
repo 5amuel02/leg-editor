@@ -288,6 +288,16 @@ terpengaruh zoom/pan yang sedang aktif dan halaman non-aktif pun ikut terekspor.
 
 ## Pintasan keyboard
 
+Daftar lengkapnya juga tersedia di dalam aplikasi: klik ikon **?** di toolbar
+atas (di sebelah tombol magnet) untuk membuka panel "Pintasan keyboard",
+dikelompokkan per kategori. Tutup lewat tombol X, klik di luar panel, atau
+`Esc`. Isinya dibaca dari `src/lib/shortcuts.js` dan dijaga test agar tidak
+melenceng dari pintasan yang benar-benar ditangani `useShortcuts`.
+
+Selama sebuah modal terbuka, pintasan sengaja tidak diteruskan ke kanvas —
+tanpa itu, menekan `Ctrl+D` sambil membaca panel Bantuan akan diam-diam
+menduplikat elemen di baliknya.
+
 | Pintasan | Fungsi |
 | --- | --- |
 | `Ctrl+Z` / `Ctrl+Shift+Z` | Undo / redo |
@@ -324,6 +334,7 @@ src/
     imageFilters.js  penyesuaian gambar (brightness, kontras, dst)
     fonts.js         font kustom: simpan, daftarkan lewat FontFace
     templates.js     katalog template & perakit halamannya
+    shortcuts.js     katalog pintasan keyboard untuk panel Bantuan
     exporters.js     render PNG/PDF dan unduh/baca berkas
     *.test.js        test vitest untuk modul murni di atas
   context/

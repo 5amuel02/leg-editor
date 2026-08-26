@@ -7,6 +7,7 @@ import {
   FileDown,
   FileJson,
   Loader2,
+  HelpCircle,
   Magnet,
   Maximize,
   Minus,
@@ -20,6 +21,7 @@ import { useEditor } from '../../context/EditorContext'
 import Button from '../ui/Button'
 import IconButton from '../ui/IconButton'
 import Popover from './Popover'
+import ShortcutsModal from './ShortcutsModal'
 import { MAX_ZOOM, MIN_ZOOM } from '../../lib/constants'
 
 /**
@@ -49,6 +51,7 @@ export default function TopBar({ onBack, onExportPNG, onExportAllPNG, onExportPD
   // Resolusi ekspor dipakai bersama oleh PNG per halaman, PNG semua halaman,
   // dan PDF — supaya pilihan user tidak diabaikan oleh salah satu tombol.
   const [exportScale, setExportScale] = useState(2)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
   useEffect(() => setName(project.name), [project.name])
 
@@ -144,6 +147,13 @@ export default function TopBar({ onBack, onExportPNG, onExportAllPNG, onExportPD
       >
         <Magnet size={17} />
       </IconButton>
+
+      {/* Bantuan: daftar pintasan keyboard */}
+      <IconButton label="Pintasan keyboard" onClick={() => setShortcutsOpen(true)}>
+        <HelpCircle size={17} />
+      </IconButton>
+
+      <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
 
       {/* ---------------- Status simpan ---------------- */}
       <div className="ml-auto flex items-center gap-2">

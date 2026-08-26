@@ -42,6 +42,13 @@ export default function useShortcuts({ onSave } = {}) {
         return
       }
 
+      // Pintasan tidak boleh menembus modal yang sedang terbuka. Panel
+      // "Pintasan keyboard" justru mengundang user mencoba kombinasi tombol
+      // sambil membacanya — tanpa penjaga ini, menekan Ctrl+D di sana akan
+      // diam-diam menduplikat elemen di balik panel. Escape tetap bekerja
+      // karena ditangani `Modal` lewat listener-nya sendiri.
+      if (document.querySelector('[role="dialog"]')) return
+
       const mod = e.ctrlKey || e.metaKey
 
       if (mod && e.key.toLowerCase() === 'z') {
