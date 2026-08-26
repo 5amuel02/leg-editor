@@ -24,7 +24,15 @@ Perintah lain:
 npm run build     # build produksi ke folder dist/
 npm run preview   # menjalankan hasil build secara lokal
 npm run lint      # oxlint
+npm test          # vitest (modul murni di src/lib)
 ```
+
+### Pasang sebagai aplikasi
+
+Hasil `npm run build` sudah berupa PWA: setelah sekali dibuka, aplikasi bisa
+dijalankan **tanpa koneksi sama sekali** dan bisa dipasang lewat ikon install
+di bilah alamat browser. Service worker hanya aktif pada build produksi —
+di `npm run dev` ia sengaja tidak didaftarkan supaya tidak mengganggu hot reload.
 
 ---
 
@@ -32,9 +40,10 @@ npm run lint      # oxlint
 
 1. **Dashboard** — tombol *Buat Desain Baru*, kolom pencarian project tersimpan,
    shortcut ukuran populer, dan grid thumbnail project terbaru.
-2. **Pilih ukuran kanvas** — preset (Instagram Post 1080×1080, Instagram Story,
-   Dokumen A4 300 dpi, Presentasi 1920×1080, Poster, Thumbnail YouTube) atau
-   ukuran custom. Semua halaman dalam satu project memakai ukuran ini.
+2. **Pilih ukuran kanvas** — tiga tab: **Preset** (Instagram Post 1080×1080,
+   Instagram Story, Dokumen A4 300 dpi, Presentasi 1920×1080, Poster, Thumbnail
+   YouTube), **Template** (enam desain siap pakai, lihat di bawah), atau
+   **Ukuran Custom**. Semua halaman dalam satu project memakai ukuran ini.
 3. **Editor** — sidebar kiri (tab), kanvas di tengah, panel properti di kanan,
    panel navigasi halaman di bawah kanvas.
 
@@ -47,7 +56,7 @@ npm run lint      # oxlint
 | Tab | Isi |
 | --- | --- |
 | **Elemen** | Bentuk dasar (kotak, kotak sudut bulat, lingkaran, elips, segitiga, belah ketupat, bintang, segi enam, garis, panah), 9 varian balon chat, dan 30 bingkai gambar dalam kategori Bentuk Dasar / Perangkat / Kertas. |
-| **Teks** | Tombol kotak teks polos + preset judul (besar-bold), subjudul (medium), dan teks isi (kecil). |
+| **Teks** | Tombol kotak teks polos + preset judul (besar-bold), subjudul (medium), dan teks isi (kecil), serta pengelola **font kustom**. |
 | **Unggahan** | Grid semua gambar yang pernah diunggah (tersimpan lokal), tombol unggah baru, klik atau seret ke kanvas. Gambar yang ditempel lewat `Ctrl+V` ikut masuk ke sini otomatis. |
 | **Alat** | Tiga jenis brush (pena, stabilo transparan, spidol tebal) dengan warna & ketebalan custom — palet cepatnya memuat putih untuk menggambar di atas latar gelap — penghapus coretan, dan pembuat tabel baris × kolom. |
 | **Layer** | Daftar semua elemen halaman aktif: reorder, sembunyi/tampil, kunci/buka, duplikat, hapus. |
@@ -59,6 +68,39 @@ Tombolnya menyesuaikan jenis elemen: **Edit**, **Crop** (khusus gambar),
 solid/putus-putus/titik-titik), **Posisi** (rata kiri–tengah–kanan–atas–bawah serta
 bawa ke depan / kirim ke belakang), **Format Painter**, duplikat, dan hapus.
 
+### Template
+
+Enam desain siap pakai di tab **Template**: Promo Diskon, Kartu Kutipan,
+Sampul Presentasi, Thumbnail YouTube, Story Pengumuman, dan Dokumen A4.
+Masing-masing membawa ukuran kanvas bawaannya sendiri.
+
+Template ditulis dengan koordinat ternormalisasi (0–1 terhadap sisi kanvas),
+bukan sebagai JSON Fabric mentah — satu definisi ikut menskala ke ukuran kanvas
+mana pun, dan pratinjau di modal digambar dari deskriptor yang sama sehingga
+tidak mungkin melenceng dari hasil aslinya.
+
+### Font kustom
+
+Tab **Teks** punya bagian *Font kustom*: muat berkas `.ttf`, `.otf`, `.woff`,
+atau `.woff2` dari komputer sendiri (maksimal 6 MB per berkas). Font disimpan
+lokal sebagai data URL dan didaftarkan lewat `FontFace` API — **tanpa satu pun
+request jaringan**, jadi tidak melanggar prinsip offline aplikasi ini seperti
+halnya menarik Google Fonts.
+
+Setelah dimuat, font langsung muncul di dropdown font panel properti dengan
+label "(kustom)". Font tersimpan di database terpisah (`leg-editor-fonts`)
+supaya penambahannya tidak pernah menyentuh database project.
+
+### Grup
+
+Pilih lebih dari satu elemen lalu **Ctrl+G** untuk menggabungkannya, atau
+**Ctrl+Shift+G** untuk memecah grup terpilih. Tombolnya juga tersedia di
+toolbar mengambang dan panel properti.
+
+Urutan tumpukan dipertahankan saat menggabung, dan warna isi/garis diteruskan
+ke seluruh isi grup. Tabel sengaja tidak bisa dipecah karena strukturnya
+bergantung pada Group.
+
 ### Panel properti (kanan)
 
 - Tanpa seleksi: nama halaman dan warna latar halaman.
@@ -68,10 +110,25 @@ bawa ke depan / kirim ke belakang), **Format Painter**, duplikat, dan hapus.
 - Bentuk: **warna isi dan warna garis diatur terpisah**, ketebalan, jenis garis,
   sudut membulat. Di toolbar mengambang keduanya tampil berdampingan — kotak
   terisi untuk warna isi, cincin untuk warna garis.
+- **Isian gradien**: setiap elemen yang punya warna isi bisa diganti dari Solid
+  ke Gradien, dengan warna awal, warna akhir, dan slider arah 0–360°.
 - Tabel: latar sel, warna & ketebalan garis, warna teks, ukuran teks.
-- Gambar: crop, potong ke 11 bentuk dari katalog bingkai, garis tepi.
+- Gambar: crop, potong ke 11 bentuk dari katalog bingkai, garis tepi, plus
+  **penyesuaian** (lihat di bawah).
 - Bingkai & balon chat: warna isi, garis, ketebalan, dan jenis garis.
-- Semua elemen: posisi X/Y, lebar/tinggi, rotasi, transparansi, rata elemen.
+- **Bayangan** untuk semua elemen non-teks: warna, kepekatan, blur, geser X/Y.
+  Teks tidak memakai panel ini karena sudah punya 16 preset efeknya sendiri.
+- Semua elemen: posisi X/Y, lebar/tinggi, rotasi, transparansi, rata elemen,
+  serta **ratakan jarak** horizontal/vertikal saat 3 elemen atau lebih terpilih.
+
+### Penyesuaian gambar
+
+Panel gambar punya slider kecerahan, kontras, saturasi, vibrance, rona warna,
+blur, noise, dan pixelate, plus tombol hitam putih / sepia / invert.
+
+Semuanya memakai `fabric.filters` bawaan dan bersifat **non-destruktif** seperti
+crop — yang tersimpan hanya angkanya, piksel asli gambar tidak pernah ditimpa.
+Riwayat undo dicatat sekali per tarikan slider, bukan per piksel gerakan.
 
 ### Balon chat
 
@@ -149,6 +206,7 @@ terpengaruh zoom/pan yang sedang aktif dan halaman non-aktif pun ikut terekspor.
 | `Ctrl+C` | Salin elemen terpilih |
 | `Ctrl+V` | Tempel gambar dari clipboard sistem ke kanvas (otomatis tersimpan ke Unggahan), atau tempel elemen yang tadi disalin |
 | `Ctrl+D` | Duplikat elemen |
+| `Ctrl+G` / `Ctrl+Shift+G` | Gabungkan jadi grup / pecah grup |
 | `Ctrl+S` | Simpan project ke browser |
 | `Ctrl` + `+` / `-` / `0` | Perbesar / perkecil / sesuaikan layar |
 | `Ctrl` + scroll | Zoom di area kanvas |
@@ -172,12 +230,19 @@ src/
     frames.js        katalog bingkai, clipPath, dan pengisian gambar
     textEffects.js   preset efek teks
     snapping.js      perhitungan & penggambaran smart guides
+    shadow.js        bayangan elemen non-teks
+    gradient.js      isian gradien linear
+    imageFilters.js  penyesuaian gambar (brightness, kontras, dst)
+    fonts.js         font kustom: simpan, daftarkan lewat FontFace
+    templates.js     katalog template & perakit halamannya
     exporters.js     render PNG/PDF dan unduh/baca berkas
+    *.test.js        test vitest untuk modul murni di atas
   context/
     EditorContext.jsx  state editor: halaman, seleksi, undo/redo, auto-save
   hooks/
     useShortcuts.js       pintasan keyboard
     useClipboardPaste.js  tempel gambar dari clipboard sistem
+    useCustomFonts.js     daftar font kustom untuk panel & dropdown
   components/
     ui/                komponen dasar (Button, Modal, ColorPicker, Toast, Field)
     dashboard/         kartu project & modal pilih ukuran
@@ -193,7 +258,10 @@ src/
 ## Catatan
 
 - Data tersimpan per-browser dan per-profil. Menghapus data situs juga akan
-  menghapus project — ekspor berkas `.json` untuk cadangan.
+  menghapus project **dan font kustom** — ekspor berkas `.json` untuk cadangan.
+- Bayangan diterapkan pada grup, bukan pada tiap anggotanya. Memecah grup yang
+  punya bayangan akan melepas bayangan itu, sama seperti aplikasi desain lain
+  yang memperlakukan efek sebagai milik grup.
 - Penghapus di tab Alat sengaja hanya menghapus coretan bebas; teks, bentuk, dan
   gambar dihapus lewat tombol Hapus atau tombol `Delete`.
 - Crop bersifat non-destruktif (memakai `cropX`/`cropY`), jadi bisa diatur ulang
