@@ -12,7 +12,17 @@ import { uid } from './project'
  * `legType` dipakai untuk menentukan ikon di panel Layer & tombol apa
  * yang muncul di toolbar mengambang.
  */
-export const EXTRA_PROPS = ['id', 'legName', 'legType', 'legLocked']
+export const EXTRA_PROPS = [
+  'id',
+  'legName',
+  'legType',
+  'legLocked',
+  'legFrameId', // bentuk bingkai asal sebuah gambar
+  'legTextEffect', // id efek teks yang sedang dipakai
+  'legEffectColor', // warna aksen efek teks
+  'legEffectStrength', // intensitas efek teks (0-100)
+  'legBaseFill', // warna isi teks sebelum efek berongga diterapkan
+]
 
 /** Serialisasi kanvas (termasuk properti kustom). */
 export function serializeCanvas(canvas) {
@@ -34,6 +44,8 @@ function defaultNameFor(legType) {
   const map = {
     text: 'Teks',
     shape: 'Bentuk',
+    bubble: 'Balon Chat',
+    frame: 'Bingkai',
     line: 'Garis',
     arrow: 'Panah',
     image: 'Gambar',

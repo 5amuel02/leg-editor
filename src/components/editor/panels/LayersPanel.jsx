@@ -9,7 +9,9 @@ import {
   EyeOff,
   Image as ImageIcon,
   Layers,
+  Frame,
   Lock,
+  MessageCircle,
   Minus,
   MoveRight,
   Signature,
@@ -31,6 +33,8 @@ const TYPE_ICONS = {
   arrow: MoveRight,
   draw: Signature,
   table: Table,
+  bubble: MessageCircle,
+  frame: Frame,
 }
 
 /**

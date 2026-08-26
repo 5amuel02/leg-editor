@@ -5,6 +5,7 @@ import { useToast } from '../../ui/Toast'
 import { deleteUpload, listUploads, saveUpload } from '../../../lib/db'
 import { getImageSize, readImageFile } from '../../../lib/exporters'
 import { createImage } from '../../../lib/fabricUtils'
+import { fillFrameWithImage } from '../../../lib/frames'
 import { uid } from '../../../lib/project'
 import Button from '../../ui/Button'
 
@@ -16,7 +17,7 @@ const MAX_FILE_MB = 12
  * Gambar bisa diklik atau di-drag langsung ke kanvas.
  */
 export default function UploadsPanel() {
-  const { addObject, size, activePage } = useEditor()
+  const { addObject, size, activePage, canvasRef, refreshSelection } = useEditor()
   const toast = useToast()
   const inputRef = useRef(null)
 
@@ -71,9 +72,23 @@ export default function UploadsPanel() {
     }
   }
 
-  /** Menambahkan gambar ke kanvas (klik thumbnail). */
+  /**
+   * Menambahkan gambar ke kanvas (klik thumbnail).
+   * Bila yang sedang terpilih adalah sebuah bingkai kosong, gambar langsung
+   * dimasukkan ke dalam bingkai itu dan dipotong mengikuti bentuknya.
+   */
   const handleAdd = async (item) => {
     if (locked) return
+    const canvas = canvasRef.current
+    const active = canvas?.getActiveObject()
+
+    if (canvas && active?.legType === 'frame') {
+      await fillFrameWithImage(canvas, active, item.dataUrl, item.name)
+      refreshSelection()
+      toast.success('Gambar dimasukkan ke bingkai.')
+      return
+    }
+
     const img = await createImage(item.dataUrl, size.width, size.height, item.name)
     addObject(img)
   }
@@ -163,7 +178,8 @@ export default function UploadsPanel() {
           </div>
           <p className="text-[11px] text-ink-400">
             Klik gambar untuk menaruhnya di tengah kanvas, atau seret ke posisi yang diinginkan.
-            Crop tersedia lewat toolbar saat gambar terpilih.
+            Kalau sebuah bingkai sedang terpilih (atau gambar dijatuhkan tepat di atasnya),
+            gambar otomatis masuk ke dalam bingkai tersebut.
           </p>
         </>
       )}

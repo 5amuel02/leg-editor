@@ -3,6 +3,7 @@ import * as fabric from 'fabric'
 import { Lock } from 'lucide-react'
 import { useEditor } from '../../context/EditorContext'
 import { createImage } from '../../lib/fabricUtils'
+import { fillFrameWithImage, findFrameAt } from '../../lib/frames'
 import FloatingToolbar from './FloatingToolbar'
 
 /**
@@ -27,6 +28,7 @@ export default function CanvasStage({ onRequestCrop }) {
     addObject,
     tool,
     formatPainterOn,
+    refreshSelection,
   } = useEditor()
 
   const hostRef = useRef(null) // div tempat Fabric menaruh canvas
@@ -145,8 +147,7 @@ export default function CanvasStage({ onRequestCrop }) {
     if (payload) {
       try {
         const { dataUrl, name } = JSON.parse(payload)
-        const img = await createImage(dataUrl, size.width, size.height, name)
-        placeAtPointer(e, img)
+        await dropImage(e, dataUrl, name)
         return
       } catch {
         /* lanjut ke sumber berikutnya */
@@ -161,9 +162,40 @@ export default function CanvasStage({ onRequestCrop }) {
         reader.onload = () => res(String(reader.result))
         reader.readAsDataURL(file)
       })
-      const img = await createImage(dataUrl, size.width, size.height, file.name)
-      placeAtPointer(e, img)
+      await dropImage(e, dataUrl, file.name)
     }
+  }
+
+  /**
+   * Menjatuhkan gambar ke kanvas. Bila titik jatuhnya berada di atas sebuah
+   * bingkai kosong, gambar dimasukkan ke bingkai itu; kalau tidak, gambar
+   * ditaruh sebagai objek biasa tepat di posisi kursor.
+   */
+  const dropImage = async (e, dataUrl, name) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const scenePoint = toScenePoint(e)
+    const frame = scenePoint ? findFrameAt(canvas, scenePoint) : null
+    if (frame) {
+      await fillFrameWithImage(canvas, frame, dataUrl, name)
+      refreshSelection()
+      return
+    }
+
+    const img = await createImage(dataUrl, size.width, size.height, name)
+    placeAtPointer(e, img)
+  }
+
+  /** Mengubah koordinat layar sebuah event drop menjadi koordinat kanvas. */
+  const toScenePoint = (e) => {
+    const canvas = canvasRef.current
+    if (!canvas) return null
+    const rect = canvas.upperCanvasEl.getBoundingClientRect()
+    const point = new fabric.Point((e.clientX - rect.left) / zoom, (e.clientY - rect.top) / zoom)
+    const inside =
+      point.x >= 0 && point.y >= 0 && point.x <= size.width && point.y <= size.height
+    return inside ? point : null
   }
 
   /** Menaruh objek tepat di titik drop (dikonversi ke koordinat kanvas). */
