@@ -35,6 +35,7 @@ import {
   applyTextEffect,
 } from '../../lib/textEffects'
 import { DEFAULT_SHADOW, readShadow, shadowPatch, supportsShadow } from '../../lib/shadow'
+import { DEFAULT_GRADIENT, gradientPatch, readGradient } from '../../lib/gradient'
 import {
   ADJUSTMENTS,
   TOGGLE_FILTERS,
@@ -46,7 +47,7 @@ import {
 import ColorPicker from '../ui/ColorPicker'
 import IconButton from '../ui/IconButton'
 import Button from '../ui/Button'
-import { FieldRow, NumberInput, SectionTitle, Select, SliderInput } from '../ui/Field'
+import { FieldRow, NumberInput, SectionTitle, Select, SliderInput, ToggleGroup } from '../ui/Field'
 
 const ALIGN_H = [
   { mode: 'left', icon: AlignLeft, label: 'Rata kiri kanvas' },
@@ -519,18 +520,7 @@ function FillStrokeProperties({ target, update, withFill, read }) {
     <div className="space-y-3">
       <SectionTitle>Warna & garis</SectionTitle>
 
-      {withFill && (
-        <FieldRow label="Warna isi">
-          <ColorPicker
-            size="sm"
-            align="right"
-            label="Warna isi"
-            allowNone
-            value={typeof src.fill === 'string' ? src.fill : null}
-            onChange={(c) => update({ fill: c })}
-          />
-        </FieldRow>
-      )}
+      {withFill && <FillSection src={src} update={update} />}
 
       <FieldRow label="Warna garis">
         <ColorPicker
@@ -586,6 +576,84 @@ function FillStrokeProperties({ target, update, withFill, read }) {
             onChange={(v) => update({ rx: v, ry: v })}
           />
         </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Warna isi: solid atau gradien linear.
+ *
+ * Dua mode ini berbagi satu properti `fill` di Fabric — solid berupa string,
+ * gradien berupa objek — jadi keduanya harus dikendalikan dari satu tempat
+ * agar tidak saling menimpa secara diam-diam.
+ */
+function FillSection({ src, update }) {
+  const gradient = readGradient(src)
+  const mode = gradient.enabled ? 'gradient' : 'solid'
+
+  const setGradient = (next) => update(gradientPatch({ ...gradient, ...next }))
+
+  return (
+    <div className="space-y-2">
+      <FieldRow label="Warna isi">
+        <ToggleGroup
+          value={mode}
+          onChange={(m) =>
+            m === 'solid'
+              ? update({ fill: gradient.enabled ? gradient.from : src.fill || '#8b5cf6' })
+              : update(gradientPatch({ ...DEFAULT_GRADIENT }))
+          }
+          options={[
+            { value: 'solid', label: 'Solid' },
+            { value: 'gradient', label: 'Gradien' },
+          ]}
+        />
+      </FieldRow>
+
+      {mode === 'solid' ? (
+        <FieldRow label="Warna">
+          <ColorPicker
+            size="sm"
+            align="right"
+            label="Warna isi"
+            allowNone
+            value={typeof src.fill === 'string' ? src.fill : null}
+            onChange={(c) => update({ fill: c })}
+          />
+        </FieldRow>
+      ) : (
+        <>
+          <FieldRow label="Dari">
+            <ColorPicker
+              size="sm"
+              align="right"
+              label="Warna awal gradien"
+              value={gradient.from}
+              onChange={(c) => setGradient({ from: c })}
+            />
+          </FieldRow>
+          <FieldRow label="Ke">
+            <ColorPicker
+              size="sm"
+              align="right"
+              label="Warna akhir gradien"
+              value={gradient.to}
+              onChange={(c) => setGradient({ to: c })}
+            />
+          </FieldRow>
+          <div>
+            <p className="mb-1 text-xs font-medium text-ink-500">Arah</p>
+            <SliderInput
+              min={0}
+              max={360}
+              step={5}
+              value={gradient.angle}
+              onChange={(v) => setGradient({ angle: v })}
+              suffix="°"
+            />
+          </div>
+        </>
       )}
     </div>
   )
