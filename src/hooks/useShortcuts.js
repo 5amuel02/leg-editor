@@ -31,6 +31,7 @@ export default function useShortcuts({ onSave } = {}) {
     formatPainterOn,
     groupSelection,
     ungroupSelection,
+    adjustFontSize,
   } = useEditor()
 
   useEffect(() => {
@@ -81,6 +82,22 @@ export default function useShortcuts({ onSave } = {}) {
         if (e.shiftKey) ungroupSelection()
         else groupSelection()
         return
+      }
+      /*
+       * Ctrl+Shift+> / Ctrl+Shift+< untuk ukuran font.
+       *
+       * `e.key` diperiksa lebih dulu (">" / "<" pada tata letak yang umum),
+       * lalu `e.code` sebagai cadangan: pada banyak tata letak non-US, Shift
+       * di tombol titik/koma tidak menghasilkan ">" atau "<" sama sekali.
+       */
+      if (mod && e.shiftKey) {
+        const naik = e.key === '>' || e.code === 'Period'
+        const turun = e.key === '<' || e.code === 'Comma'
+        if (naik || turun) {
+          e.preventDefault()
+          adjustFontSize(naik ? 1 : -1)
+          return
+        }
       }
       if (mod && e.key.toLowerCase() === 's') {
         e.preventDefault()
@@ -157,5 +174,6 @@ export default function useShortcuts({ onSave } = {}) {
     formatPainterOn,
     groupSelection,
     ungroupSelection,
+    adjustFontSize,
   ])
 }

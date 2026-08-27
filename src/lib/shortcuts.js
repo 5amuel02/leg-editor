@@ -38,6 +38,14 @@ export const SHORTCUT_GROUPS = [
     ],
   },
   {
+    id: 'teks',
+    label: 'Teks',
+    items: [
+      { action: 'Perbesar ukuran font', keys: ['Ctrl', 'Shift', '>'], note: 'Naik 2 px tiap tekan' },
+      { action: 'Perkecil ukuran font', keys: ['Ctrl', 'Shift', '<'], note: 'Turun 2 px tiap tekan' },
+    ],
+  },
+  {
     id: 'navigasi',
     label: 'Navigasi',
     items: [
@@ -45,6 +53,9 @@ export const SHORTCUT_GROUPS = [
       { action: 'Perkecil', keys: ['Ctrl', '−'] },
       { action: 'Sesuaikan layar', keys: ['Ctrl', '0'] },
       { action: 'Zoom di area kanvas', keys: ['Ctrl', 'scroll'] },
+      { action: 'Geser area kerja', keys: ['scroll dua jari'], note: 'Ke segala arah' },
+      { action: 'Geser area kerja dengan mouse', keys: ['Spasi', 'seret'] },
+      { action: 'Geser mendatar', keys: ['Shift', 'scroll'] },
     ],
   },
   {

@@ -178,12 +178,42 @@ export const BRUSH_SWATCHES = [
   '#8b5cf6', '#d946ef', '#ec4899', '#78350f',
 ]
 
+/**
+ * Kursor pensil untuk mode menggambar.
+ *
+ * Digambar sebagai SVG inline, bukan berkas terpisah, supaya tetap sejalan
+ * dengan janji "tanpa request jaringan" dan tidak menambah aset yang harus
+ * ikut di-cache service worker. Isian putih dengan garis gelap membuatnya
+ * terbaca baik di atas latar terang maupun gelap.
+ *
+ * Angka `2 22` adalah titik panas (hotspot): ujung mata pensil, bukan sudut
+ * gambar — tanpa itu, goresan akan terasa meleset dari posisi kursor.
+ */
+const PENCIL_SVG = [
+  '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">',
+  '<path d="M2 22 L5.2 14.8 L16.2 3.8 L20.2 7.8 L9.2 18.8 Z"',
+  ' fill="#ffffff" stroke="#0f172a" stroke-width="1.4" stroke-linejoin="round"/>',
+  '<path d="M5.2 14.8 L9.2 18.8" stroke="#0f172a" stroke-width="1.2"/>',
+  '</svg>',
+].join('')
+
+export const PENCIL_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(PENCIL_SVG)}") 2 22, crosshair`
+
 /** Style garis untuk stroke (dashArray). */
 export const STROKE_STYLES = [
   { id: 'solid', label: 'Solid', dash: null },
   { id: 'dashed', label: 'Putus-putus', dash: [12, 8] },
   { id: 'dotted', label: 'Titik-titik', dash: [2, 6] },
 ]
+
+/**
+ * Langkah dan batas ukuran font untuk pintasan Ctrl+Shift+> / Ctrl+Shift+<.
+ * Langkah tetap 2px dipilih supaya hasilnya bisa ditebak — bukan skala
+ * bertingkat yang lompatannya berubah-ubah tergantung ukuran saat itu.
+ */
+export const FONT_SIZE_STEP = 2
+export const FONT_SIZE_MIN = 4
+export const FONT_SIZE_MAX = 400
 
 /** Rasio crop cepat untuk gambar. */
 export const CROP_RATIOS = [

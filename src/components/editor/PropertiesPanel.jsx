@@ -25,7 +25,7 @@ import {
 } from 'lucide-react'
 import { useEditor } from '../../context/EditorContext'
 import { getLegType, groupStyleSource, readTableStyle } from '../../lib/fabricUtils'
-import { FONT_FAMILIES, STROKE_STYLES } from '../../lib/constants'
+import { FONT_FAMILIES, FONT_SIZE_MAX, FONT_SIZE_MIN, STROKE_STYLES } from '../../lib/constants'
 import { useFontOptions } from '../../hooks/useCustomFonts'
 import { MASK_SHAPES, createClipShape } from '../../lib/frames'
 import {
@@ -86,6 +86,7 @@ export default function PropertiesPanel({ onRequestCrop }) {
     ungroupSelection,
     deleteSelected,
     duplicateObject,
+    setFontSize,
     toggleObjectLock,
     activePage,
     activeIndex,
@@ -202,7 +203,12 @@ export default function PropertiesPanel({ onRequestCrop }) {
 
         {/* ---------------- Properti khusus jenis elemen ---------------- */}
         {target && type === 'text' && (
-          <TextProperties target={target} update={updateSelected} applyEffect={applyEffect} />
+          <TextProperties
+            target={target}
+            update={updateSelected}
+            applyEffect={applyEffect}
+            setFontSize={setFontSize}
+          />
         )}
 
         {target && (type === 'shape' || type === 'bubble' || type === 'frame' || type === 'group') && (
@@ -326,7 +332,7 @@ function PageProperties({ page, index, total, size, updatePage, setPageBackgroun
   )
 }
 
-function TextProperties({ target, update, applyEffect }) {
+function TextProperties({ target, update, applyEffect, setFontSize }) {
   // Font bawaan + font kustom yang diunggah pengguna, dalam satu dropdown.
   const fontOptions = useFontOptions()
   const isBold = target.fontWeight === 'bold' || Number(target.fontWeight) >= 600
@@ -343,12 +349,14 @@ function TextProperties({ target, update, applyEffect }) {
       />
 
       <FieldRow label="Ukuran">
+        {/* Lewat `setFontSize`, bukan `update`, supaya efek teks ikut dihitung
+            ulang — persis seperti pintasan Ctrl+Shift+> / Ctrl+Shift+<. */}
         <NumberInput
           className="w-20"
           value={Math.round(target.fontSize || 0)}
-          min={4}
-          max={800}
-          onChange={(v) => update({ fontSize: v })}
+          min={FONT_SIZE_MIN}
+          max={FONT_SIZE_MAX}
+          onChange={setFontSize}
         />
         <ColorPicker
           size="sm"

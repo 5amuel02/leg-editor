@@ -31,7 +31,16 @@ import {
   snapAngle,
 } from '../lib/snapping'
 import { drawDistances, drawMeasurement } from '../lib/measurement'
-import { MAX_ZOOM, MIN_ZOOM, THUMB_WIDTH } from '../lib/constants'
+import {
+  FONT_SIZE_MAX,
+  FONT_SIZE_MIN,
+  FONT_SIZE_STEP,
+  MAX_ZOOM,
+  MIN_ZOOM,
+  PENCIL_CURSOR,
+  THUMB_WIDTH,
+} from '../lib/constants'
+import { applyTextEffect } from '../lib/textEffects'
 import { createEmptyPage, renumberPages, uid } from '../lib/project'
 import { FONTS_CHANGED_EVENT } from '../lib/fonts'
 import { saveProject } from '../lib/db'
@@ -676,6 +685,56 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
     setSelection([])
   }, [])
 
+  /**
+   * Mengubah ukuran font teks terpilih.
+   *
+   * `resolve` menerima ukuran saat ini dan mengembalikan ukuran baru, sehingga
+   * satu fungsi melayani dua kebutuhan: panel properti memberi angka absolut,
+   * pintasan keyboard memberi selisih. Ukurannya dihitung PER OBJEK — dengan
+   * `updateSelected` biasa, dua teks berbeda ukuran akan dipaksa sama besar.
+   *
+   * Efek teks diterapkan ulang setelahnya karena ukurannya (tebal bayangan,
+   * lebar outline) dihitung relatif terhadap `fontSize` pada saat diterapkan.
+   * Tanpa ini, memperbesar teks membuat efeknya tertinggal di ukuran lama.
+   */
+  const resizeFont = useCallback(
+    (resolve) => {
+      const canvas = canvasRef.current
+      if (!canvas) return
+      const targets = canvas.getActiveObjects().filter((obj) => getLegType(obj) === 'text')
+      if (targets.length === 0) return
+
+      targets.forEach((obj) => {
+        const next = Math.round(resolve(obj.fontSize || 0))
+        const clamped = Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, next))
+        if (clamped === obj.fontSize) return
+        obj.set({ fontSize: clamped })
+        if (obj.legTextEffect && obj.legTextEffect !== 'none') {
+          applyTextEffect(obj, obj.legTextEffect, {
+            color: obj.legEffectColor,
+            strength: obj.legEffectStrength,
+          })
+        }
+        obj.setCoords()
+      })
+
+      canvas.requestRenderAll()
+      setPropsVersion((v) => v + 1)
+      pushHistory()
+      scheduleAutosave()
+    },
+    [pushHistory, scheduleAutosave],
+  )
+
+  /** Ukuran font absolut (dipakai panel properti). */
+  const setFontSize = useCallback((value) => resizeFont(() => value), [resizeFont])
+
+  /** Naik/turun satu langkah (dipakai Ctrl+Shift+> dan Ctrl+Shift+<). */
+  const adjustFontSize = useCallback(
+    (direction) => resizeFont((current) => current + direction * FONT_SIZE_STEP),
+    [resizeFont],
+  )
+
   /** Menghapus objek tertentu (dipakai panel Layer). */
   const removeObject = useCallback((obj) => {
     const canvas = canvasRef.current
@@ -1118,6 +1177,9 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       pencil.strokeLineJoin = 'round'
       pencil.decimate = brush.type === 'highlighter' ? 6 : 4
       canvas.freeDrawingBrush = pencil
+      // Fabric menimpa kursor lewat style inline pada kanvas atas, jadi kelas
+      // CSS di elemen pembungkus tidak akan terpakai — harus disetel di sini.
+      canvas.freeDrawingCursor = PENCIL_CURSOR
     }
 
     canvas.defaultCursor = tool === 'erase' ? 'crosshair' : 'default'
@@ -1223,6 +1285,8 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       deleteSelected,
       removeObject,
       duplicateObject,
+      setFontSize,
+      adjustFontSize,
       copySelection,
       pasteClipboard,
       orderSelected,
@@ -1285,6 +1349,8 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       deleteSelected,
       removeObject,
       duplicateObject,
+      setFontSize,
+      adjustFontSize,
       copySelection,
       pasteClipboard,
       orderSelected,

@@ -4,6 +4,7 @@ import { Lock } from 'lucide-react'
 import { useEditor } from '../../context/EditorContext'
 import { createImage } from '../../lib/fabricUtils'
 import { fillFrameWithImage, findFrameAt } from '../../lib/frames'
+import useCanvasPan from '../../hooks/useCanvasPan'
 import FloatingToolbar from './FloatingToolbar'
 
 /**
@@ -35,6 +36,8 @@ export default function CanvasStage({ onRequestCrop }) {
   const scrollRef = useRef(null) // area scroll di sekelilingnya
   const [dragOver, setDragOver] = useState(false)
   const didFitRef = useRef(false)
+
+  const { panReady, panning } = useCanvasPan(scrollRef, canvasRef)
 
   /* ---------------------------------------------------------------- */
   /* Inisialisasi Fabric                                               */
@@ -215,14 +218,19 @@ export default function CanvasStage({ onRequestCrop }) {
     }
   }
 
-  const cursorClass =
-    tool === 'draw'
-      ? 'cursor-crosshair'
-      : tool === 'erase'
-        ? 'cursor-cell'
-        : formatPainterOn
-          ? 'cursor-copy'
-          : ''
+  // Kursor geser menang atas kursor mode: saat spasi ditahan, yang sedang
+  // dilakukan user adalah menggeser, bukan menggambar atau menghapus.
+  const cursorClass = panning
+    ? 'cursor-grabbing'
+    : panReady
+      ? 'cursor-grab'
+      : tool === 'draw'
+        ? 'cursor-crosshair'
+        : tool === 'erase'
+          ? 'cursor-cell'
+          : formatPainterOn
+            ? 'cursor-copy'
+            : ''
 
   return (
     <div
@@ -235,9 +243,15 @@ export default function CanvasStage({ onRequestCrop }) {
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
     >
-      {/* Wrapper agar kanvas selalu berada di tengah area scroll */}
-      <div className="flex min-h-full min-w-full items-center justify-center p-12">
-        <div className={`relative ${cursorClass}`}>
+      {/*
+        Kanvas dipusatkan lewat `m-auto` pada anaknya, BUKAN `justify-center`
+        pada pembungkusnya. Di dalam kotak yang bisa di-scroll, justify-center
+        membuat luapan di sisi kiri/atas tidak bisa dijangkau sama sekali —
+        itulah sebabnya area kerja terasa terkunci di tengah saat di-zoom.
+        Margin auto memusatkan saat masih muat, dan melepas saat tidak.
+      */}
+      <div className="flex min-h-full min-w-full p-12">
+        <div className={`relative m-auto ${cursorClass}`}>
           <div ref={hostRef} />
 
           {/* Overlay indikator halaman terkunci */}
