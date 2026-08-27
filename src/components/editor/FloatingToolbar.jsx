@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { useEditor } from '../../context/EditorContext'
 import { getLegType } from '../../lib/fabricUtils'
+import { findLabel, isLabelable } from '../../lib/shapeLabel'
 import { STROKE_STYLES } from '../../lib/constants'
 import IconButton from '../ui/IconButton'
 import ColorPicker from '../ui/ColorPicker'
@@ -51,10 +52,13 @@ export default function FloatingToolbar({ onRequestCrop }) {
     groupSelection,
     ungroupSelection,
     transforming,
+    updateLabel,
   } = useEditor()
 
   const target = selection.length === 1 ? selection[0] : null
   const multi = selection.length > 1
+  const shapeLabel =
+    target && isLabelable(target) ? findLabel(canvasRef.current, target) : null
 
   /* Posisi toolbar dihitung dari bounding box objek (koordinat scene × zoom). */
   const position = useMemo(() => {
@@ -156,6 +160,18 @@ export default function FloatingToolbar({ onRequestCrop }) {
           allowNone
           value={typeof target?.fill === 'string' ? target.fill : '#e11620'}
           onChange={(c) => updateSelected({ fill: c })}
+        />
+      )}
+
+      {/* Warna teks di dalam bentuk — hanya muncul bila bentuknya memang
+          punya teks, dan sengaja bersebelahan dengan warna isi supaya jelas
+          keduanya dua hal yang berbeda. */}
+      {shapeLabel && (
+        <ColorPicker
+          size="sm"
+          label="Warna teks di dalam bentuk"
+          value={typeof shapeLabel.fill === 'string' ? shapeLabel.fill : null}
+          onChange={(c) => updateLabel({ fill: c })}
         />
       )}
 

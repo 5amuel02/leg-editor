@@ -1,5 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
-import { findLabel, findOwner, isLabel, isLabelable, syncLabel, unlink, withLabels } from './shapeLabel'
+import {
+  contrastingTextColor,
+  findLabel,
+  findOwner,
+  isLabel,
+  isLabelable,
+  syncLabel,
+  unlink,
+  withLabels,
+} from './shapeLabel'
 
 /** Bentuk palsu: `syncLabel` hanya butuh ukuran, sudut, dan titik pusatnya. */
 const bentuk = ({ id = 's1', w = 200, h = 100, angle = 0, cx = 100, cy = 50, ...rest } = {}) => ({
@@ -127,6 +136,39 @@ describe('withLabels', () => {
   it('melewati objek tanpa label', () => {
     const a = { id: 'a' }
     expect(withLabels(kanvas([a]), [a])).toEqual([a])
+  })
+})
+
+describe('contrastingTextColor', () => {
+  const gelap = '#0f172a'
+  const terang = '#ffffff'
+
+  it('memakai teks gelap di atas bentuk terang', () => {
+    expect(contrastingTextColor('#ffffff')).toBe(gelap)
+    expect(contrastingTextColor('#fef3c7')).toBe(gelap)
+  })
+
+  it('memakai teks terang di atas bentuk gelap', () => {
+    expect(contrastingTextColor('#0f172a')).toBe(terang)
+    expect(contrastingTextColor('#e11620')).toBe(terang)
+  })
+
+  it('menilai kuning sebagai warna terang, bukan gelap', () => {
+    // Rata-rata RGB biasa menilai kuning gelap; pembobotan luminansi tidak.
+    expect(contrastingTextColor('#ffff00')).toBe(gelap)
+  })
+
+  it('memahami hex 3 digit dan rgb()', () => {
+    expect(contrastingTextColor('#fff')).toBe(gelap)
+    expect(contrastingTextColor('#000')).toBe(terang)
+    expect(contrastingTextColor('rgb(255, 255, 255)')).toBe(gelap)
+    expect(contrastingTextColor('rgba(0, 0, 0, 0.5)')).toBe(terang)
+  })
+
+  it('jatuh ke putih untuk isian yang bukan warna solid', () => {
+    expect(contrastingTextColor({ colorStops: [] })).toBe(terang)
+    expect(contrastingTextColor(null)).toBe(terang)
+    expect(contrastingTextColor('bukan-warna')).toBe(terang)
   })
 })
 

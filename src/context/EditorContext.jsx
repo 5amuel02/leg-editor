@@ -796,6 +796,31 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
     [pushHistory, scheduleAutosave],
   )
 
+  /**
+   * Mengubah properti teks yang ada DI DALAM bentuk terpilih.
+   *
+   * Teks itu sengaja tidak bisa diklik, jadi tanpa jalur ini satu-satunya cara
+   * mengubah warnanya adalah masuk ke mode edit lebih dulu. Terpisah dari
+   * `updateSelected`, yang mengenai bentuknya — bukan teksnya.
+   */
+  const updateLabel = useCallback(
+    (patch) => {
+      const canvas = canvasRef.current
+      if (!canvas) return
+      const shape = canvas.getActiveObject()
+      const label = findLabel(canvas, shape)
+      if (!label) return
+
+      label.set(patch)
+      syncLabel(shape, label)
+      canvas.requestRenderAll()
+      setPropsVersion((v) => v + 1)
+      pushHistory()
+      scheduleAutosave()
+    },
+    [pushHistory, scheduleAutosave],
+  )
+
   /** Ukuran font absolut (dipakai panel properti). */
   const setFontSize = useCallback((value) => resizeFont(() => value), [resizeFont])
 
@@ -1371,6 +1396,7 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       removeObject,
       duplicateObject,
       setFontSize,
+      updateLabel,
       adjustFontSize,
       copySelection,
       pasteClipboard,
@@ -1435,6 +1461,7 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       removeObject,
       duplicateObject,
       setFontSize,
+      updateLabel,
       adjustFontSize,
       copySelection,
       pasteClipboard,

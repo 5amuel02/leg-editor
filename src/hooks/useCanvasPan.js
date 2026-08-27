@@ -11,16 +11,20 @@ function isTypingTarget(el) {
  * Menggeser (pan) area kerja kanvas.
  *
  * Kanvas berada di dalam kotak `overflow-auto`, jadi "menggeser" pada dasarnya
- * adalah menggerakkan `scrollLeft`/`scrollTop` kotak itu. Dua cara disediakan:
+ * adalah menggerakkan `scrollLeft`/`scrollTop` kotak itu. Tiga cara disediakan:
  *
  * - **Scroll dua jari** ke segala arah. Roda mouse/touchpad ditangani sendiri
  *   (bukan dibiarkan native) karena dua alasan: `deltaX` horizontal pada
  *   banyak browser dipakai sebagai gestur "kembali ke halaman sebelumnya",
  *   dan menanganinya sendiri membuat arah tegak maupun mendatar berperilaku
  *   sama persis.
- * - **Spasi + seret**, alternatif untuk mouse biasa. Event `mousedown`-nya
- *   ditangkap pada fase capture lalu dihentikan, supaya Fabric tidak ikut
- *   memulai seleksi kotak di bawahnya.
+ * - **Spasi + seret**, alternatif untuk mouse biasa.
+ * - **Klik kanan + seret**, tanpa perlu menahan tombol apa pun. Aplikasi ini
+ *   tidak punya menu konteks sendiri, jadi tombol kanan bebas dipakai untuk
+ *   navigasi; menu konteks bawaan browser ditekan agar tidak memutus seretan.
+ *
+ * Kedua cara seret itu menangkap `mousedown` pada fase capture lalu
+ * menghentikannya, supaya Fabric tidak ikut memulai seleksi kotak di bawahnya.
  *
  * Zoom (Ctrl + scroll) sengaja dilewati di sini dan tetap ditangani terpisah.
  */
@@ -90,15 +94,19 @@ export default function useCanvasPan(scrollRef, canvasRef) {
     }
   }, [canvasRef])
 
-  /* ---------------- Spasi + seret ---------------- */
+  /* ---------------- Spasi + seret, dan klik kanan + seret ---------------- */
   useEffect(() => {
     const box = scrollRef.current
-    if (!box || !panReady) return
+    if (!box) return
 
-    const onDown = (e) => {
-      if (e.button !== 0) return
-      // Capture + stopPropagation: Fabric tidak boleh melihat event ini,
-      // kalau tidak ia akan memulai seleksi kotak sambil kita menggeser.
+    /**
+     * Memulai satu sesi seret. Dipakai bersama oleh dua pemicu: tombol kiri
+     * saat spasi ditahan, dan tombol kanan kapan saja.
+     *
+     * Event dihentikan pada fase capture supaya Fabric tidak melihatnya —
+     * kalau tidak, ia akan memulai seleksi kotak sambil kita menggeser.
+     */
+    const mulaiSeret = (e) => {
       e.preventDefault()
       e.stopPropagation()
       setPanning(true)
@@ -122,8 +130,27 @@ export default function useCanvasPan(scrollRef, canvasRef) {
       window.addEventListener('mouseup', onUp)
     }
 
+    const onDown = (e) => {
+      // Tombol kanan: selalu menggeser. Aplikasi ini tidak punya menu konteks
+      // sendiri, jadi tombol kanan bebas dipakai untuk navigasi.
+      if (e.button === 2) {
+        mulaiSeret(e)
+        return
+      }
+      // Tombol kiri: hanya saat spasi sedang ditahan.
+      if (e.button === 0 && panReady) mulaiSeret(e)
+    }
+
+    // Menu konteks browser harus ditekan, kalau tidak ia muncul di tengah
+    // seretan dan sesi geser terputus.
+    const onContextMenu = (e) => e.preventDefault()
+
     box.addEventListener('mousedown', onDown, true)
-    return () => box.removeEventListener('mousedown', onDown, true)
+    box.addEventListener('contextmenu', onContextMenu)
+    return () => {
+      box.removeEventListener('mousedown', onDown, true)
+      box.removeEventListener('contextmenu', onContextMenu)
+    }
   }, [scrollRef, panReady])
 
   return { panReady, panning }

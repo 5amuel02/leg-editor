@@ -215,6 +215,16 @@ bentuknya; klik mengenai bentuk, dobel-klik membuka pengeditan teks. Teks yang
 ditinggalkan kosong dihapus otomatis. Menghapus, menduplikat, menyalin, dan
 menempel bentuk ikut membawa teksnya.
 
+**Warna teksnya** diatur terpisah dari warna isi bentuk: saat bentuknya
+terpilih, muncul pemilih warna teks di toolbar mengambang (bersebelahan dengan
+warna isi) dan di panel properti bagian *Teks dalam bentuk*. Font, ukuran, dan
+efek teks tetap diatur lewat panel penuh yang muncul saat teks sedang diedit.
+
+Warna bawaannya dipilih dari kecerahan isian bentuk — putih di atas bentuk
+gelap, hampir hitam di atas bentuk terang. Kecerahan dihitung dengan
+pembobotan luminansi, bukan rata-rata RGB, supaya warna seperti kuning tidak
+salah dinilai sebagai gelap.
+
 Secara teknis teks disimpan sebagai objek terpisah yang ditautkan lewat
 sepasang id (`legLabelId` pada bentuk, `legLabelFor` pada teks), bukan sebagai
 anak sebuah Group: di dalam Group, dobel-klik harus masuk ke grup dulu dan
@@ -223,8 +233,13 @@ pengeditannya jadi berlapis.
 ### Pan area kerja
 
 Saat kanvas di-zoom melebihi area kerja, geser dengan **scroll dua jari** ke
-segala arah, **Shift + roda** untuk mendatar, atau **Spasi + seret** dengan
-mouse biasa. Ctrl + scroll tetap untuk zoom.
+segala arah, **Shift + roda** untuk mendatar, **Spasi + seret**, atau
+**klik kanan + seret** tanpa perlu menahan tombol apa pun. Ctrl + scroll tetap
+untuk zoom.
+
+Tombol kanan bebas dipakai untuk navigasi karena aplikasi ini tidak punya menu
+konteks sendiri; menu konteks bawaan browser ditekan agar tidak memutus
+seretan di tengah jalan.
 
 ### Smart guides & snapping
 
@@ -330,6 +345,7 @@ menduplikat elemen di baliknya.
 | `Ctrl+D` | Duplikat elemen |
 | `Ctrl+Shift+>` / `Ctrl+Shift+<` | Perbesar / perkecil ukuran font (2 px per tekan) |
 | `Spasi` + seret | Geser area kerja |
+| Klik kanan + seret | Geser area kerja |
 | Scroll dua jari | Geser area kerja ke segala arah |
 | Dobel-klik bentuk | Tulis teks di dalam bentuk |
 | `Ctrl+G` / `Ctrl+Shift+G` | Gabungkan jadi grup / pecah grup |

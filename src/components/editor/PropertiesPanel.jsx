@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { useEditor } from '../../context/EditorContext'
 import { getLegType, groupStyleSource, readTableStyle } from '../../lib/fabricUtils'
+import { findLabel, isLabelable } from '../../lib/shapeLabel'
 import { FONT_FAMILIES, FONT_SIZE_MAX, FONT_SIZE_MIN, STROKE_STYLES } from '../../lib/constants'
 import { useFontOptions } from '../../hooks/useCustomFonts'
 import { MASK_SHAPES, createClipShape } from '../../lib/frames'
@@ -87,6 +88,7 @@ export default function PropertiesPanel({ onRequestCrop }) {
     deleteSelected,
     duplicateObject,
     setFontSize,
+    updateLabel,
     toggleObjectLock,
     activePage,
     activeIndex,
@@ -117,6 +119,10 @@ export default function PropertiesPanel({ onRequestCrop }) {
   const target = selection.length === 1 ? selection[0] : null
   const multi = selection.length > 1
   const type = target ? getLegType(target) : null
+
+  // Teks di dalam bentuk dibaca ulang tiap render; `propsVersion` berubah
+  // setiap kali kanvas dimodifikasi, jadi nilainya tidak akan basi.
+  const shapeLabel = target && isLabelable(target) ? findLabel(canvasRef.current, target) : null
 
   if (!open) {
     return (
@@ -219,6 +225,9 @@ export default function PropertiesPanel({ onRequestCrop }) {
             read={type === 'group' ? groupStyleSource(target) : undefined}
           />
         )}
+
+        {/* Warna teks di dalam bentuk — terpisah dari warna isi bentuknya */}
+        {shapeLabel && <ShapeTextProperties label={shapeLabel} updateLabel={updateLabel} />}
 
         {target && type === 'frame' && (
           <p className="rounded-lg bg-ink-50 px-3 py-2 text-[11px] leading-relaxed text-ink-500">
@@ -585,6 +594,33 @@ function FillStrokeProperties({ target, update, withFill, read }) {
           />
         </div>
       )}
+    </div>
+  )
+}
+
+/**
+ * Warna teks yang berada di dalam sebuah bentuk.
+ *
+ * Ditampilkan saat BENTUKNYA terpilih, bukan saat teksnya sedang diedit:
+ * teks di dalam bentuk sengaja tidak bisa diklik, jadi tanpa panel ini
+ * satu-satunya cara mengubah warnanya adalah masuk mode edit lebih dulu.
+ */
+function ShapeTextProperties({ label, updateLabel }) {
+  return (
+    <div className="space-y-3">
+      <SectionTitle>Teks dalam bentuk</SectionTitle>
+      <FieldRow label="Warna teks">
+        <ColorPicker
+          size="sm"
+          align="right"
+          label="Warna teks dalam bentuk"
+          value={typeof label.fill === 'string' ? label.fill : null}
+          onChange={(c) => updateLabel({ fill: c })}
+        />
+      </FieldRow>
+      <p className="text-[11px] leading-relaxed text-ink-400">
+        Dobel-klik bentuknya untuk mengubah isi teks, font, dan ukurannya.
+      </p>
     </div>
   )
 }

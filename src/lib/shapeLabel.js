@@ -65,6 +65,40 @@ export function syncLabel(shape, label) {
   label.setCoords()
 }
 
+/**
+ * Warna teks bawaan, dipilih dari kecerahan isian bentuknya.
+ *
+ * Satu warna tetap tidak bisa benar untuk semua bentuk: putih hilang di atas
+ * bentuk kuning, hitam hilang di atas bentuk gelap. Kecerahan dihitung dengan
+ * pembobotan luminansi relatif — mata jauh lebih peka pada hijau daripada biru,
+ * jadi rata-rata RGB biasa akan salah menilai warna seperti kuning.
+ *
+ * Isian yang bukan warna solid (gradien, pola) tidak bisa dinilai; untuk itu
+ * dipakai putih, yang lebih sering benar karena gradien di sini cenderung pekat.
+ */
+export function contrastingTextColor(fill) {
+  if (typeof fill !== 'string') return '#ffffff'
+
+  let r, g, b
+  const cocokHex = fill.replace('#', '')
+  const rgb = fill.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i)
+
+  if (rgb) {
+    ;[r, g, b] = [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])]
+  } else if (/^[0-9a-f]{3}$/i.test(cocokHex)) {
+    ;[r, g, b] = cocokHex.split('').map((c) => parseInt(c + c, 16))
+  } else if (/^[0-9a-f]{6}$/i.test(cocokHex)) {
+    r = parseInt(cocokHex.slice(0, 2), 16)
+    g = parseInt(cocokHex.slice(2, 4), 16)
+    b = parseInt(cocokHex.slice(4, 6), 16)
+  } else {
+    return '#ffffff'
+  }
+
+  const luminansi = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return luminansi > 0.6 ? '#0f172a' : '#ffffff'
+}
+
 /** Membuat label baru untuk sebuah bentuk (belum ditautkan). */
 export function createLabel(shape, { fontSize } = {}) {
   const size = fontSize || Math.max(12, Math.round(shape.getScaledHeight() * 0.16))
@@ -72,7 +106,7 @@ export function createLabel(shape, { fontSize } = {}) {
   const label = new fabric.Textbox('', {
     fontSize: size,
     fontFamily: 'Inter, sans-serif',
-    fill: '#ffffff',
+    fill: contrastingTextColor(shape.fill),
     textAlign: 'center',
     originX: 'center',
     originY: 'center',
