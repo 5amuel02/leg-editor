@@ -202,6 +202,30 @@ Bayangan Tebal, Outline Tebal, 3D Ekstrusi, Emboss, Stiker, dan Blok. Setiap
 efek punya pemilih warna aksen dan slider intensitas, dan ukurannya menyesuaikan
 `fontSize` sehingga proporsinya tetap sama pada judul kecil maupun besar.
 
+### Teks di dalam bentuk
+
+Dobel-klik sebuah bentuk atau balon chat untuk langsung mengetik di dalamnya —
+tanpa menambah elemen teks terpisah. Teksnya menempel pada bentuk: selalu di
+tengah, ikut bergerak, ikut berputar, dan lebarnya menyesuaikan saat bentuk
+diresize (ukuran font tetap, teks membungkus ulang — menskalakan font akan
+membuat teks ikut gepeng saat bentuk diresize tidak proporsional).
+
+Teksnya sengaja tidak bisa diklik sendiri supaya terasa menyatu dengan
+bentuknya; klik mengenai bentuk, dobel-klik membuka pengeditan teks. Teks yang
+ditinggalkan kosong dihapus otomatis. Menghapus, menduplikat, menyalin, dan
+menempel bentuk ikut membawa teksnya.
+
+Secara teknis teks disimpan sebagai objek terpisah yang ditautkan lewat
+sepasang id (`legLabelId` pada bentuk, `legLabelFor` pada teks), bukan sebagai
+anak sebuah Group: di dalam Group, dobel-klik harus masuk ke grup dulu dan
+pengeditannya jadi berlapis.
+
+### Pan area kerja
+
+Saat kanvas di-zoom melebihi area kerja, geser dengan **scroll dua jari** ke
+segala arah, **Shift + roda** untuk mendatar, atau **Spasi + seret** dengan
+mouse biasa. Ctrl + scroll tetap untuk zoom.
+
 ### Smart guides & snapping
 
 Saat elemen digeser, garis bantu pink 1px muncul otomatis ketika elemen sejajar
@@ -304,6 +328,10 @@ menduplikat elemen di baliknya.
 | `Ctrl+C` | Salin elemen terpilih |
 | `Ctrl+V` | Tempel gambar dari clipboard sistem ke kanvas (otomatis tersimpan ke Unggahan), atau tempel elemen yang tadi disalin |
 | `Ctrl+D` | Duplikat elemen |
+| `Ctrl+Shift+>` / `Ctrl+Shift+<` | Perbesar / perkecil ukuran font (2 px per tekan) |
+| `Spasi` + seret | Geser area kerja |
+| Scroll dua jari | Geser area kerja ke segala arah |
+| Dobel-klik bentuk | Tulis teks di dalam bentuk |
 | `Ctrl+G` / `Ctrl+Shift+G` | Gabungkan jadi grup / pecah grup |
 | `Ctrl+S` | Simpan project ke browser |
 | `Ctrl` + `+` / `-` / `0` | Perbesar / perkecil / sesuaikan layar |
@@ -335,6 +363,7 @@ src/
     fonts.js         font kustom: simpan, daftarkan lewat FontFace
     templates.js     katalog template & perakit halamannya
     shortcuts.js     katalog pintasan keyboard untuk panel Bantuan
+    shapeLabel.js    teks di dalam bentuk: pembuatan, penautan, sinkronisasi
     exporters.js     render PNG/PDF dan unduh/baca berkas
     *.test.js        test vitest untuk modul murni di atas
   context/
@@ -343,6 +372,7 @@ src/
     useShortcuts.js       pintasan keyboard
     useClipboardPaste.js  tempel gambar dari clipboard sistem
     useCustomFonts.js     daftar font kustom untuk panel & dropdown
+    useCanvasPan.js       geser area kerja: scroll dua jari & Spasi+seret
   components/
     ui/                komponen dasar (Button, Modal, ColorPicker, Toast, Field)
     dashboard/         kartu project & modal pilih ukuran

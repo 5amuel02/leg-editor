@@ -43,6 +43,19 @@ import {
 import { applyTextEffect } from '../lib/textEffects'
 import { createEmptyPage, renumberPages, uid } from '../lib/project'
 import { FONTS_CHANGED_EVENT } from '../lib/fonts'
+import {
+  beginEditing,
+  createLabel,
+  endEditing,
+  findLabel,
+  findOwner,
+  isLabel,
+  isLabelable,
+  link,
+  syncLabel,
+  withLabels,
+  cloneLabelOnto,
+} from '../lib/shapeLabel'
 import { saveProject } from '../lib/db'
 
 const EditorContext = createContext(null)
@@ -285,7 +298,8 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
 
       canvas.on('object:added', onChanged)
       canvas.on('object:removed', onChanged)
-      canvas.on('object:modified', () => {
+      canvas.on('object:modified', (e) => {
+        syncLabelOf(e.target)
         onChanged()
         setPropsVersion((v) => v + 1)
       })
@@ -332,6 +346,7 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       canvas.on('object:scaling', (e) => {
         setPropsVersion((v) => v + 1)
         setTransforming(true)
+        syncLabelOf(e.target)
         measureRef.current = { target: e.target, mode: 'size' }
 
         if (!snapEnabledRef.current || isSnapSuppressed(e.e)) {
@@ -357,6 +372,7 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       canvas.on('object:moving', (e) => {
         setPropsVersion((v) => v + 1)
         setTransforming(true)
+        syncLabelOf(e.target)
         measureRef.current = { target: e.target, mode: 'position' }
         if (!snapEnabledRef.current || isSnapSuppressed(e.e)) {
           clearGuides()
@@ -381,6 +397,7 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       canvas.on('object:rotating', (e) => {
         setPropsVersion((v) => v + 1)
         setTransforming(true)
+        syncLabelOf(e.target)
         measureRef.current = { target: e.target, mode: 'angle' }
         if (!snapEnabledRef.current || isSnapSuppressed(e.e)) return
         const snapped = snapAngle(e.target.angle)
@@ -400,6 +417,58 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       canvas.on('mouse:up', () => {
         setTransforming(false)
         clearOverlays()
+      })
+
+      /* ---------------- Teks di dalam shape ---------------- */
+
+      /** Menempelkan ulang label ke bentuknya setiap kali bentuk berubah. */
+      const syncLabelOf = (shape) => {
+        if (!shape?.legLabelId) return
+        const label = findLabel(canvas, shape)
+        if (label) syncLabel(shape, label)
+      }
+
+      canvas.on('mouse:dblclick', (e) => {
+        const target = e.target
+        if (!target || !isLabelable(target) || target.legLocked) return
+        if (projectRef.current.pages[activeIndexRef.current]?.locked) return
+
+        let label = findLabel(canvas, target)
+        if (!label) {
+          label = createLabel(target)
+          link(target, label)
+          canvas.add(label)
+          // Label harus selalu berada di atas bentuknya, kalau tidak teksnya
+          // tertutup oleh isian bentuk itu sendiri.
+          canvas.bringObjectToFront(label)
+          syncLabel(target, label)
+        }
+        beginEditing(canvas, label)
+      })
+
+      // Nama event di level KANVAS adalah 'text:editing:exited';
+      // 'editing:exited' hanya dipancarkan oleh objeknya sendiri.
+      canvas.on('text:editing:exited', (e) => {
+        const label = e.target
+        if (!isLabel(label)) return
+        const owner = findOwner(canvas, label)
+        const dihapus = endEditing(canvas, label)
+        if (!dihapus && owner) syncLabel(owner, label)
+        canvas.discardActiveObject()
+        if (owner) canvas.setActiveObject(owner)
+        canvas.requestRenderAll()
+        setObjectsVersion((v) => v + 1)
+        refreshSelection()
+        pushHistory()
+        scheduleAutosave()
+      })
+
+      // Teks yang bertambah/berkurang mengubah tinggi kotak, jadi titik
+      // tengahnya harus dihitung ulang selagi mengetik.
+      canvas.on('text:changed', (e) => {
+        if (!isLabel(e.target)) return
+        const owner = findOwner(canvas, e.target)
+        if (owner) syncLabel(owner, e.target)
       })
 
       // Path baru dari mode menggambar diberi identitas agar muncul di panel Layer.
@@ -679,7 +748,8 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
     if (!canvas) return
     const targets = canvas.getActiveObjects()
     if (targets.length === 0) return
-    targets.forEach((obj) => canvas.remove(obj))
+    // Teks di dalam bentuk ikut terhapus bersama bentuknya.
+    withLabels(canvas, targets).forEach((obj) => canvas.remove(obj))
     canvas.discardActiveObject()
     canvas.requestRenderAll()
     setSelection([])
@@ -739,7 +809,7 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
   const removeObject = useCallback((obj) => {
     const canvas = canvasRef.current
     if (!canvas) return
-    canvas.remove(obj)
+    withLabels(canvas, [obj]).forEach((o) => canvas.remove(o))
     canvas.discardActiveObject()
     canvas.requestRenderAll()
     setSelection([])
@@ -762,6 +832,11 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
           top: (clone.top || 0) + 24,
         })
         canvas.add(clone)
+        // Bentuk bertekst harus ikut menggandakan teksnya; kalau tidak,
+        // salinannya akan menunjuk ke label milik bentuk aslinya.
+        if (clone.legLabelId) {
+          await cloneLabelOnto(canvas, findLabel(canvas, obj), clone, uid('obj'))
+        }
         clones.push(clone)
       }
       canvas.discardActiveObject()
@@ -778,14 +853,21 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
     if (!canvas) return
     const active = canvas.getActiveObject()
     if (!active) return
-    clipboardRef.current = await active.clone(EXTRA_PROPS)
+    // Label ikut disalin ke clipboard, bukan hanya ditautkan: saat ditempel,
+    // salinannya harus punya kotak teks sendiri.
+    const label = findLabel(canvas, active)
+    clipboardRef.current = {
+      object: await active.clone(EXTRA_PROPS),
+      label: label ? await label.clone(EXTRA_PROPS) : null,
+    }
   }, [])
 
   /** Tempel objek dari clipboard internal. */
   const pasteClipboard = useCallback(async () => {
     const canvas = canvasRef.current
-    if (!canvas || !clipboardRef.current) return
-    const clone = await clipboardRef.current.clone(EXTRA_PROPS)
+    const entry = clipboardRef.current
+    if (!canvas || !entry) return
+    const clone = await entry.object.clone(EXTRA_PROPS)
     clone.set({ id: uid('obj'), left: (clone.left || 0) + 30, top: (clone.top || 0) + 30 })
     if (clone.type === 'activeselection') {
       clone.canvas = canvas
@@ -796,6 +878,9 @@ export function EditorProvider({ initialProject, children, onProjectSaved }) {
       clone.setCoords()
     } else {
       canvas.add(clone)
+      if (clone.legLabelId) {
+        await cloneLabelOnto(canvas, entry.label, clone, uid('obj'))
+      }
     }
     canvas.setActiveObject(clone)
     canvas.requestRenderAll()

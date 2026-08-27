@@ -35,6 +35,11 @@ export const SHORTCUT_GROUPS = [
       { action: 'Pecah grup', keys: ['Ctrl', 'Shift', 'G'] },
       { action: 'Geser 1 px', keys: ['↑', '↓', '←', '→'] },
       { action: 'Geser 10 px', keys: ['Shift', '↑ ↓ ← →'] },
+      {
+        action: 'Tulis teks di dalam bentuk',
+        keys: ['dobel-klik'],
+        note: 'Pada bentuk atau balon chat; teksnya ikut bergerak dan menyesuaikan ukuran',
+      },
     ],
   },
   {

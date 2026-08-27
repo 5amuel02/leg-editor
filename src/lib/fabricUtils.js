@@ -22,6 +22,8 @@ export const EXTRA_PROPS = [
   'legEffectColor', // warna aksen efek teks
   'legEffectStrength', // intensitas efek teks (0-100)
   'legBaseFill', // warna isi teks sebelum efek berongga diterapkan
+  'legLabelId', // id kotak teks yang menempel di dalam sebuah bentuk
+  'legLabelFor', // id bentuk pemilik, diisi pada kotak teks tersebut
 ]
 
 /** Serialisasi kanvas (termasuk properti kustom). */
@@ -104,6 +106,12 @@ export function applyLock(obj, locked) {
  */
 export function syncLockState(canvas, pageLocked = false) {
   canvas.getObjects().forEach((obj) => {
+    // Teks di dalam bentuk memang tidak boleh bisa diklik sendiri; jangan
+    // dihidupkan lagi di sini hanya karena halamannya tidak terkunci.
+    if (obj.legLabelFor) {
+      obj.set({ selectable: false, evented: false })
+      return
+    }
     const locked = pageLocked || !!obj.legLocked
     obj.set({
       selectable: !locked,
